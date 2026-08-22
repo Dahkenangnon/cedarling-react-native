@@ -39,7 +39,7 @@ const requiredArchitectures = new Set(['ios-arm64', 'ios-simulator-arm64']);
 if (provenance.revision !== 'f7c6e34be6ac8d585a9d7b6f7a12921b440b495b') {
   throw new Error('Unexpected Cedarling iOS revision');
 }
-if (provenance.minimumIosVersion !== '16.4') {
+if (provenance.minimumIosVersion !== '17.5') {
   throw new Error('Unexpected minimum iOS version');
 }
 for (const target of provenance.rustTargets ?? []) requiredTargets.delete(target);
@@ -105,8 +105,8 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
       exit 1
     fi
     BUILD_METADATA="$(xcrun vtool -show-build "$library")"
-    if ! grep -q 'minos 16.4' <<< "$BUILD_METADATA"; then
-      echo "Static library does not record the iOS 16.4 deployment target: $library" >&2
+    if ! grep -q 'minos 17.5' <<< "$BUILD_METADATA"; then
+      echo "Static library does not record the iOS 17.5 deployment target: $library" >&2
       exit 1
     fi
     if otool -L "$library" | grep -E '/Users/|/home/' >/dev/null; then

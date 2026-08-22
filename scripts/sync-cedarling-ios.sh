@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
 PROJECT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 IOS_DIR="$PROJECT_DIR/ios"
 PIN_FILE="$IOS_DIR/cedarling-native/PINNED_REVISION"
-MINIMUM_IOS_VERSION="16.4"
+MINIMUM_IOS_VERSION="17.5"
 ALLOW_DIRTY=false
 JANS_REPO=""
 
@@ -114,6 +114,11 @@ UPSTREAM_FRAMEWORK="$BINDING_DIR/ios/Mobile.xcframework"
 UPSTREAM_SWIFT="$BINDING_DIR/build/cedarling_uniffi.swift"
 if [[ ! -d "$UPSTREAM_FRAMEWORK" || ! -f "$UPSTREAM_SWIFT" ]]; then
   echo "Pinned build did not produce the expected XCFramework and Swift binding" >&2
+  exit 1
+fi
+find "$UPSTREAM_FRAMEWORK" -type f -path '*/Headers/*.swift' -delete
+if find "$UPSTREAM_FRAMEWORK" -type f -path '*/Headers/*.swift' -print -quit | grep -q .; then
+  echo "XCFramework headers contain an unexpected duplicate Swift binding" >&2
   exit 1
 fi
 if ! grep -Eq '^(public|open) class Cedarling([ :]|$)' "$UPSTREAM_SWIFT"; then
