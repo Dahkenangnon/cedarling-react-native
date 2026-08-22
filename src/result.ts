@@ -30,7 +30,7 @@ export function mapAuthorizeResult(value: unknown): CedarlingAuthorizeResult {
       'native Boolean and Cedar decision disagree'
     );
   }
-  if (typeof requestId !== 'string' || requestId.length === 0) {
+  if (typeof requestId !== 'string' || requestId.trim().length === 0) {
     throw new CedarlingError('E_NATIVE_RESULT_INCONSISTENT', 'native request ID is missing');
   }
   if (!isRecord(diagnostics)) {

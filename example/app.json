@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "Cedarling React Native",
+    "name": "Cedarling React Native Example",
     "slug": "cedarling-react-native-example",
     "version": "1.0.0",
-    "platforms": ["android"],
+    "platforms": ["android", "ios"],
     "orientation": "portrait",
     "jsEngine": "hermes",
     "icon": "./assets/icon.png",
@@ -19,6 +19,9 @@
             "minSdkVersion": 24,
             "enableMinifyInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true
+          },
+          "ios": {
+            "deploymentTarget": "17.5"
           }
         }
       ]
@@ -32,6 +35,10 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "expo.modules.cedarling.example"
+    },
+    "ios": {
+      "bundleIdentifier": "com.dahkenangnon.cedarlingreactnative.example",
+      "supportsTablet": true
     }
   }
 }

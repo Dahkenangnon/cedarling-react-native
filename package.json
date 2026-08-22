@@ -1,7 +1,7 @@
 {
   "name": "cedarling-react-native",
   "version": "0.1.0",
-  "description": "Android-first Expo module for embedded Jans Cedarling authorization",
+  "description": "Expo module for embedded Jans Cedarling authorization on Android and iOS",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
@@ -13,9 +13,14 @@
     "test:android": "npm --prefix example run test:android",
     "test:android:instrumented": "npm --prefix example run test:android:instrumented",
     "verify:android-artifacts": "bash scripts/verify-android-artifacts.sh",
+    "verify:ios-artifacts": "bash scripts/verify-ios-artifacts.sh",
+    "verify:native-pins": "bash scripts/verify-native-pin.sh",
+    "verify:autolinking": "node scripts/verify-autolinking.mjs",
+    "verify:package": "node scripts/verify-package.mjs",
     "build:policy-fixture": "bash scripts/build-policy-fixture.sh",
     "prepare": "node internal/module_scripts/prepare.js",
-    "open:android": "node internal/module_scripts/open-android.js"
+    "open:android": "node internal/module_scripts/open-android.js",
+    "open:ios": "node internal/module_scripts/open-ios.js"
   },
   "keywords": [
     "react-native",
@@ -23,6 +28,7 @@
     "cedarling",
     "authorization",
     "android",
+    "ios",
     "expo-module"
   ],
   "author": "Janssen Project Contributors",
@@ -34,9 +40,14 @@
     "android/maven",
     "android/libs",
     "android/src/main",
+    "ios/*.swift",
+    "ios/generated",
+    "ios/CedarlingNative.xcframework",
+    "ios/cedarling-native",
     "build",
     "src/*.ts",
     "expo-module.config.json",
+    "CedarlingReactNative.podspec",
     "README.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"

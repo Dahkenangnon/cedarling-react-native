@@ -55,6 +55,6 @@ export function normalizeCedarlingError(
 export function unsupportedPlatformError(platform: string): CedarlingError {
   return new CedarlingError(
     'E_UNSUPPORTED_PLATFORM',
-    'cedarling-react-native supports Android only; received ' + platform
+    'cedarling-react-native supports Android and iOS; received ' + platform
   );
 }
