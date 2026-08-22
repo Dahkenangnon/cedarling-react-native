@@ -77,7 +77,7 @@ if [[ "$CURRENT_REVISION" != "$PINNED_REVISION" ]]; then
   echo "Jans checkout revision $CURRENT_REVISION does not match $PINNED_REVISION" >&2
   exit 1
 fi
-TAG_REVISION="$(git -C "$JANS_REPO" rev-parse "${PINNED_RELEASE_TAG}^{commit}" 2>/dev/null || true)"
+TAG_REVISION="$(git -C "$JANS_REPO" rev-parse --verify "${PINNED_RELEASE_TAG}^{commit}" 2>/dev/null || true)"
 if [[ -n "$TAG_REVISION" && "$TAG_REVISION" != "$CURRENT_REVISION" ]]; then
   echo "$PINNED_RELEASE_TAG resolves to $TAG_REVISION instead of $CURRENT_REVISION" >&2
   exit 1
