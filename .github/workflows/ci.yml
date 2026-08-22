@@ -205,8 +205,10 @@ jobs:
           arch: x86_64
           target: google_apis
           profile: pixel_6
+          disk-size: 4096M
+          emulator-boot-timeout: 900
           disable-animations: true
-          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-metrics
           script: |
             adb shell getprop ro.product.cpu.abilist
             adb shell getconf PAGE_SIZE
@@ -289,16 +291,12 @@ jobs:
       - name: Install CocoaPods dependencies
         working-directory: example/ios
         run: |
-          if [[ -f ../ios-lock/Podfile.lock ]]; then
-            cp ../ios-lock/Podfile.lock Podfile.lock
-            pod install --deployment
-          else
-            echo "Bootstrapping the initial reviewed Podfile.lock"
-            pod install
-          fi
+          test -f ../ios-lock/Podfile.lock
+          cp ../ios-lock/Podfile.lock Podfile.lock
+          pod install --deployment
           grep -q 'CedarlingReactNative' Podfile.lock
 
-      - name: Upload generated Podfile lock
+      - name: Upload verified Podfile lock
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ios-pod-lock-${{ github.sha }}

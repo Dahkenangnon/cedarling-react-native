@@ -21,7 +21,6 @@ abort 'iOS test targets already exist' if project.targets.any? { |target| [unit_
 
 unit_target = project.new_target(:unit_test_bundle, unit_name, :ios, '17.5')
 ui_target = project.new_target(:ui_test_bundle, ui_name, :ios, '17.5')
-unit_target.add_dependency(app_target)
 ui_target.add_dependency(app_target)
 
 tests_group = project.main_group.find_subpath('CedarlingTests', true)
@@ -51,14 +50,14 @@ unit_target.build_configurations.each do |configuration|
   configuration.base_configuration_reference = app_configuration.base_configuration_reference
   configuration.build_settings.merge!(
     'ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES' => 'YES',
-    'BUNDLE_LOADER' => '$(TEST_HOST)',
+    'BUNDLE_LOADER' => '',
     'CODE_SIGNING_ALLOWED' => 'NO',
     'GENERATE_INFOPLIST_FILE' => 'YES',
     'IPHONEOS_DEPLOYMENT_TARGET' => '17.5',
     'PRODUCT_BUNDLE_IDENTIFIER' => "com.dahkenangnon.cedarlingreactnative.#{unit_name.downcase}",
     'PRODUCT_NAME' => unit_name,
     'SWIFT_VERSION' => '5.9',
-    'TEST_HOST' => "$(BUILT_PRODUCTS_DIR)/#{app_target.product_name}.app/#{app_target.product_name}"
+    'TEST_HOST' => ''
   )
 end
 
