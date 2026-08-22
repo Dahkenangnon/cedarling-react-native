@@ -56,6 +56,7 @@ unit_target.build_configurations.each do |configuration|
     'GENERATE_INFOPLIST_FILE' => 'YES',
     'IPHONEOS_DEPLOYMENT_TARGET' => '17.5',
     'PRODUCT_BUNDLE_IDENTIFIER' => "com.dahkenangnon.cedarlingreactnative.#{unit_name.downcase}",
+    'PRODUCT_NAME' => unit_name,
     'SWIFT_VERSION' => '5.9',
     'TEST_HOST' => "$(BUILT_PRODUCTS_DIR)/#{app_target.product_name}.app/#{app_target.product_name}"
   )
@@ -66,6 +67,7 @@ ui_target.build_configurations.each do |configuration|
     'GENERATE_INFOPLIST_FILE' => 'YES',
     'IPHONEOS_DEPLOYMENT_TARGET' => '17.5',
     'PRODUCT_BUNDLE_IDENTIFIER' => "com.dahkenangnon.cedarlingreactnative.#{ui_name.downcase}",
+    'PRODUCT_NAME' => ui_name,
     'SWIFT_VERSION' => '5.9',
     'TEST_TARGET_NAME' => app_target.name
   )

@@ -287,14 +287,16 @@ jobs:
         run: npx expo prebuild --clean --platform ios --no-install
 
       - name: Install CocoaPods dependencies
+        working-directory: example/ios
         run: |
-          if [[ -f example/ios-lock/Podfile.lock ]]; then
-            cp example/ios-lock/Podfile.lock example/ios/Podfile.lock
-            pod install --project-directory=example/ios --deployment
+          if [[ -f ../ios-lock/Podfile.lock ]]; then
+            cp ../ios-lock/Podfile.lock Podfile.lock
+            pod install --deployment
           else
             echo "Bootstrapping the initial reviewed Podfile.lock"
-            pod install --project-directory=example/ios
+            pod install
           fi
+          grep -q 'CedarlingReactNative' Podfile.lock
 
       - name: Upload generated Podfile lock
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
