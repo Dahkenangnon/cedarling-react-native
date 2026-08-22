@@ -1,15 +1,28 @@
 {
   "expo": {
-    "name": "my-module-example",
-    "slug": "my-module-example",
+    "name": "Cedarling React Native",
+    "slug": "cedarling-react-native-example",
     "version": "1.0.0",
+    "platforms": ["android"],
     "orientation": "portrait",
+    "jsEngine": "hermes",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "expo.modules.cedarling.example"
-    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0",
+            "minSdkVersion": 24,
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ]
+    ],
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -19,9 +32,6 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "expo.modules.cedarling.example"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
     }
   }
 }

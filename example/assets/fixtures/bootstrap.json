@@ -1,0 +1,6 @@
+{
+  "CEDARLING_APPLICATION_NAME": "Cedarling React Native example",
+  "CEDARLING_LOG_LEVEL": "ERROR",
+  "CEDARLING_LOG_TYPE": "memory",
+  "CEDARLING_LOG_TTL": 120
+}

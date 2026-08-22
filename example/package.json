@@ -1,9 +1,11 @@
 {
-  "name": "my-module-example",
+  "name": "cedarling-react-native-example",
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
     "expo": "~57.0.15",
+    "expo-asset": "~57.0.13",
+    "expo-build-properties": "~57.0.13",
     "react": "19.2.3",
     "react-native": "0.86.2"
   },
@@ -14,13 +16,20 @@
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web"
+    "prebuild": "expo prebuild --platform android",
+    "test:android": "cd android && ./gradlew testDebugUnitTest",
+    "test:android:instrumented": "cd android && ./gradlew connectedDebugAndroidTest",
+    "build:release": "cd android && ./gradlew assembleRelease bundleRelease"
   },
   "private": true,
   "expo": {
     "autolinking": {
       "nativeModulesDir": ".."
+    }
+  },
+  "overrides": {
+    "xcode": {
+      "uuid": "11.1.1"
     }
   }
 }

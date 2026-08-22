@@ -3,8 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "my-module": ["../src/index"],
-      "my-module/*": ["../src/*"]
+      "cedarling-react-native": ["../src/index"],
+      "cedarling-react-native/*": ["../src/*"]
     }
   }
 }

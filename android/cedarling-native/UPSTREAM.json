@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/JanssenProject/jans.git",
+  "releaseTag": "v2.3.0",
+  "revision": "f7c6e34be6ac8d585a9d7b6f7a12921b440b495b",
+  "cedarlingCrateVersion": "2.3.0",
+  "cedarlingUniffiCrateVersion": "0.1.0",
+  "uniffiVersion": "0.29.5",
+  "uniffiKotlinAndroid": true,
+  "buildType": "release",
+  "rustVersion": "rustc 1.95.0 (59807616e 2026-04-14)",
+  "rustFlags": "-C link-arg=-Wl,-z,max-page-size=16384",
+  "androidNdkVersion": "29.0.14206865",
+  "elfLoadAlignmentBytes": 16384,
+  "generatedBindingPackage": "uniffi.cedarling_uniffi",
+  "supportedAbis": [
+    "armeabi-v7a",
+    "arm64-v8a",
+    "x86",
+    "x86_64"
+  ],
+  "generatedAt": "2026-08-22T17:31:16Z",
+  "artifacts": [
+    {
+      "path": "src/main/java/expo/modules/cedarling/CedarlingProvenance.kt",
+      "sha256": "ec5cab494f6521ed2bb6d7c0edaa0e761b4a9bb66e8bfeb2197676e5040d3ae6",
+      "sizeBytes": 394
+    },
+    {
+      "path": "src/main/java/org/jans/cedarling/CedarlingAndroid.kt",
+      "sha256": "f6a39a813ea5e768213b42011c3e0f6edf8cbdd180227829f1194d67f5e71da4",
+      "sizeBytes": 1302
+    },
+    {
+      "path": "src/main/java/uniffi/cedarling_uniffi/cedarling_uniffi.kt",
+      "sha256": "4f30d1d64a18e8ba9c196ff4d2e671256a4917d5deb2257a237a287a5e70ee5e",
+      "sizeBytes": 141000
+    },
+    {
+      "path": "src/main/jniLibs/armeabi-v7a/libcedarling_uniffi.so",
+      "sha256": "852dd2e638eafa8eea356db556400658a05428e2d134d424e2da17209f5ab84c",
+      "sizeBytes": 19145520
+    },
+    {
+      "path": "src/main/jniLibs/arm64-v8a/libcedarling_uniffi.so",
+      "sha256": "331c6876390c7375b0807cd5f6ecc3e13624ef63acc782cb11148e348935d12b",
+      "sizeBytes": 28395176
+    },
+    {
+      "path": "src/main/jniLibs/x86/libcedarling_uniffi.so",
+      "sha256": "173c43e1821a69c76e4ff057b5b28f5040ad587e7e482e880768adb12b1fee1e",
+      "sizeBytes": 28422072
+    },
+    {
+      "path": "src/main/jniLibs/x86_64/libcedarling_uniffi.so",
+      "sha256": "d526da238e8062ff39964a7105638ceda6e9e30ea652286460cba1cbaaee6284",
+      "sizeBytes": 28979384
+    },
+    {
+      "path": "libs/rustls-platform-verifier-0.1.1.jar",
+      "sha256": "d63c9049ec8d19ab63c612decc932dc859d42e59af3917b65595dee26eb1a367",
+      "sizeBytes": 9093
+    },
+    {
+      "path": "maven/rustls/rustls-platform-verifier/0.1.1/rustls-platform-verifier-0.1.1.aar",
+      "sha256": "667292cadd8fa589229dd0f716541236a761f29b774930868d218175633830fd",
+      "sizeBytes": 9287
+    },
+    {
+      "path": "maven/rustls/rustls-platform-verifier/0.1.1/rustls-platform-verifier-0.1.1.pom",
+      "sha256": "5468629ab3793f4768c0527b8ecca25219a00b5d9503d1ad657cc664c87e9081",
+      "sizeBytes": 551
+    }
+  ]
+}

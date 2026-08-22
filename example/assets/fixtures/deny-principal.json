@@ -1,0 +1,7 @@
+{
+  "cedar_entity_mapping": {
+    "entity_type": "ReactNativeExample::User",
+    "id": "mallory"
+  },
+  "role": "guest"
+}

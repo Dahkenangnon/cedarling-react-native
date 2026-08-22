@@ -1,0 +1,15 @@
+namespace ReactNativeExample {
+  type Context = {};
+
+  entity User = {
+    role: String
+  };
+
+  entity Document;
+
+  action "Read" appliesTo {
+    principal: [User],
+    resource: [Document],
+    context: Context
+  };
+}
