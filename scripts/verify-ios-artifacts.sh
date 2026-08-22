@@ -117,7 +117,7 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
       echo "Static library does not record the iOS 17.5 deployment target: $library" >&2
       exit 1
     fi
-    if otool -L "$library" | grep -E '/Users/|/home/' >/dev/null; then
+    if otool -L "$library" | grep -E '^[[:space:]]+(/Users/|/home/)' >/dev/null; then
       echo "Static library contains a machine-local dynamic dependency: $library" >&2
       exit 1
     fi
