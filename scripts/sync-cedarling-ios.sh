@@ -6,6 +6,7 @@ PROJECT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 IOS_DIR="$PROJECT_DIR/ios"
 PIN_FILE="$IOS_DIR/cedarling-native/PINNED_REVISION"
 MINIMUM_IOS_VERSION="17.5"
+PINNED_RELEASE_TAG="v2.3.0"
 ALLOW_DIRTY=false
 JANS_REPO=""
 
@@ -51,7 +52,7 @@ if [[ -z "$JANS_REPO" ]]; then
   exit 2
 fi
 
-for command in cargo git make node protoc rustup xcodebuild; do
+for command in cargo git make node protoc rustup xcodebuild xcrun; do
   if ! command -v "$command" >/dev/null 2>&1; then
     echo "Required command is unavailable: $command" >&2
     exit 1
@@ -76,6 +77,11 @@ if [[ "$CURRENT_REVISION" != "$PINNED_REVISION" ]]; then
   echo "Jans checkout revision $CURRENT_REVISION does not match $PINNED_REVISION" >&2
   exit 1
 fi
+TAG_REVISION="$(git -C "$JANS_REPO" rev-parse "${PINNED_RELEASE_TAG}^{commit}" 2>/dev/null || true)"
+if [[ -n "$TAG_REVISION" && "$TAG_REVISION" != "$CURRENT_REVISION" ]]; then
+  echo "$PINNED_RELEASE_TAG resolves to $TAG_REVISION instead of $CURRENT_REVISION" >&2
+  exit 1
+fi
 if [[ "$ALLOW_DIRTY" != true ]] && [[ -n "$(git -C "$JANS_REPO" status --porcelain --untracked-files=all)" ]]; then
   echo "Jans checkout is dirty; use a clean checkout or explicitly pass --allow-dirty" >&2
   exit 1
@@ -94,11 +100,15 @@ if ! grep -q 'aarch64-apple-ios-sim' "$BINDING_DIR/Makefile" ||
   echo "Pinned Makefile is missing the required Apple targets" >&2
   exit 1
 fi
-for apple_flag in \
-  '-miphoneos-version-min=17.5' \
-  '-mios-simulator-version-min=17.5'; do
-  if ! grep -Fq -- "$apple_flag" "$APPLE_CONFIG"; then
-    echo "Pinned Apple build configuration is missing $apple_flag" >&2
+for apple_config_line in \
+  'CFLAGS_aarch64_apple_ios = "-miphoneos-version-min=17.5"' \
+  'CXXFLAGS_aarch64_apple_ios = "-miphoneos-version-min=17.5"' \
+  'rustflags = ["-C", "link-arg=-miphoneos-version-min=17.5"]' \
+  'CFLAGS_aarch64_apple_ios_sim = "-mios-simulator-version-min=17.5"' \
+  'CXXFLAGS_aarch64_apple_ios_sim = "-mios-simulator-version-min=17.5"' \
+  'rustflags = ["-C", "link-arg=-mios-simulator-version-min=17.5"]'; do
+  if ! grep -Fqx -- "$apple_config_line" "$APPLE_CONFIG"; then
+    echo "Pinned Apple build configuration is missing: $apple_config_line" >&2
     exit 1
   fi
 done
@@ -115,6 +125,11 @@ export RUSTUP_TOOLCHAIN=1.95.0
     cargo build --release --locked -p cedarling_uniffi --target=aarch64-apple-ios-sim
   IPHONEOS_DEPLOYMENT_TARGET="$MINIMUM_IOS_VERSION" \
     cargo build --release --locked -p cedarling_uniffi --target=aarch64-apple-ios
+  for target in aarch64-apple-ios-sim aarch64-apple-ios; do
+    library="../../target/$target/release/libcedarling_uniffi.a"
+    xcrun strip -S "$library"
+    xcrun ranlib "$library"
+  done
   cargo run --locked --bin uniffi-bindgen generate \
     --library ../../target/release/libcedarling_uniffi.dylib \
     --language swift \
@@ -159,9 +174,8 @@ ditto "$STAGING_DIR/CedarlingNative.xcframework" "$IOS_DIR/CedarlingNative.xcfra
 install -m 0644 "$STAGING_DIR/generated/cedarling_uniffi.swift" \
   "$IOS_DIR/generated/cedarling_uniffi.swift"
 
-RELEASE_TAG="$(git -C "$JANS_REPO" describe --tags --exact-match 2>/dev/null || printf 'unreleased')"
 CEDARLING_REVISION="$CURRENT_REVISION" \
-CEDARLING_RELEASE_TAG="$RELEASE_TAG" \
+CEDARLING_RELEASE_TAG="$PINNED_RELEASE_TAG" \
 CEDARLING_GENERATED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 CEDARLING_RUST_VERSION="$(rustc --version)" \
 CEDARLING_XCODE_VERSION="$(xcodebuild -version | tr '\n' ' ')" \

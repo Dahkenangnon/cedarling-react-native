@@ -39,11 +39,17 @@ const requiredArchitectures = new Set(['ios-arm64', 'ios-simulator-arm64']);
 if (provenance.revision !== 'f7c6e34be6ac8d585a9d7b6f7a12921b440b495b') {
   throw new Error('Unexpected Cedarling iOS revision');
 }
+if (provenance.releaseTag !== 'v2.3.0') {
+  throw new Error('Unexpected Cedarling iOS release tag');
+}
 if (provenance.minimumIosVersion !== '17.5') {
   throw new Error('Unexpected minimum iOS version');
 }
 if (provenance.cargoLocked !== true) {
   throw new Error('iOS artifacts were not generated with Cargo.lock enforcement');
+}
+if (provenance.gitBlobLimitBytes !== 104857600) {
+  throw new Error('Unexpected iOS Git blob size limit');
 }
 for (const target of provenance.rustTargets ?? []) requiredTargets.delete(target);
 for (const architecture of provenance.supportedArchitectures ?? []) {
@@ -99,6 +105,12 @@ fi
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
   for library in "${LIBRARIES[@]}"; do
+    library_size="$(wc -c < "$library" | tr -d '[:space:]')"
+    if (( library_size >= 104857600 )); then
+      echo "Static library reaches GitHub's 100 MiB blob limit: $library ($library_size bytes)" >&2
+      exit 1
+    fi
+
     if ! lipo -info "$library" | grep -q 'arm64'; then
       echo "Static library is missing arm64: $library" >&2
       exit 1
