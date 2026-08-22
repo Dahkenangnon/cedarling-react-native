@@ -105,7 +105,9 @@ const provenance = {
   supportedArchitectures: ['ios-arm64', 'ios-simulator-arm64'],
   generatedBindingModule: 'cedarling_uniffiFFI',
   buildCommands: [
-    'make ios-build BUILD_TYPE=release',
+    'make build BUILD_TYPE=release',
+    'IPHONEOS_DEPLOYMENT_TARGET=16.4 cargo build --release -p cedarling_uniffi --target=aarch64-apple-ios-sim',
+    'IPHONEOS_DEPLOYMENT_TARGET=16.4 cargo build --release -p cedarling_uniffi --target=aarch64-apple-ios',
     'make ios-bindings BUILD_TYPE=release',
     'make ios-xcframework BUILD_TYPE=release',
   ],

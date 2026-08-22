@@ -98,11 +98,14 @@ rustup toolchain install 1.95.0 --profile minimal
 rustup target add --toolchain 1.95.0 aarch64-apple-ios aarch64-apple-ios-sim
 
 export RUSTUP_TOOLCHAIN=1.95.0
-export IPHONEOS_DEPLOYMENT_TARGET="$MINIMUM_IOS_VERSION"
 
 (
   cd "$BINDING_DIR"
-  make ios-build BUILD_TYPE=release
+  make build BUILD_TYPE=release
+  IPHONEOS_DEPLOYMENT_TARGET="$MINIMUM_IOS_VERSION" \
+    cargo build --release -p cedarling_uniffi --target=aarch64-apple-ios-sim
+  IPHONEOS_DEPLOYMENT_TARGET="$MINIMUM_IOS_VERSION" \
+    cargo build --release -p cedarling_uniffi --target=aarch64-apple-ios
   make ios-bindings BUILD_TYPE=release
   make ios-xcframework BUILD_TYPE=release
 )
