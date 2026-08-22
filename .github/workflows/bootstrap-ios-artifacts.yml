@@ -38,10 +38,16 @@ jobs:
           path: _jans
           persist-credentials: false
 
+      - name: Install pinned protoc
+        uses: arduino/setup-protoc@3ea1d70ac22caff0b66ed6cb37d5b7aadebd4623
+        with:
+          version: "31.1"
+
       - name: Select and report toolchain
         run: |
           uname -m
           xcodebuild -version
+          protoc --version
           sw_vers
 
       - name: Generate pinned iOS artifacts

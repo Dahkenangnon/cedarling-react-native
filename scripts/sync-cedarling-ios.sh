@@ -51,7 +51,7 @@ if [[ -z "$JANS_REPO" ]]; then
   exit 2
 fi
 
-for command in cargo git make node rustup xcodebuild; do
+for command in cargo git make node protoc rustup xcodebuild; do
   if ! command -v "$command" >/dev/null 2>&1; then
     echo "Required command is unavailable: $command" >&2
     exit 1
@@ -144,6 +144,7 @@ CEDARLING_GENERATED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 CEDARLING_RUST_VERSION="$(rustc --version)" \
 CEDARLING_XCODE_VERSION="$(xcodebuild -version | tr '\n' ' ')" \
 CEDARLING_MACOS_VERSION="$(sw_vers -productVersion) ($(sw_vers -buildVersion))" \
+CEDARLING_PROTOC_VERSION="$(protoc --version)" \
 CEDARLING_MINIMUM_IOS_VERSION="$MINIMUM_IOS_VERSION" \
   node "$PROJECT_DIR/scripts/write-ios-provenance.mjs"
 

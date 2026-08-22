@@ -51,6 +51,7 @@ const generatedAt = requiredEnv('CEDARLING_GENERATED_AT');
 const rustVersion = requiredEnv('CEDARLING_RUST_VERSION');
 const xcodeVersion = requiredEnv('CEDARLING_XCODE_VERSION');
 const macosVersion = requiredEnv('CEDARLING_MACOS_VERSION');
+const protocVersion = requiredEnv('CEDARLING_PROTOC_VERSION');
 const minimumIosVersion = requiredEnv('CEDARLING_MINIMUM_IOS_VERSION');
 
 const provenanceSource = join(iosDir, 'CedarlingProvenance.swift');
@@ -100,6 +101,7 @@ const provenance = {
   rustVersion,
   xcodeVersion,
   macosVersion,
+  protocVersion,
   minimumIosVersion,
   rustTargets: ['aarch64-apple-ios', 'aarch64-apple-ios-sim'],
   supportedArchitectures: ['ios-arm64', 'ios-simulator-arm64'],
