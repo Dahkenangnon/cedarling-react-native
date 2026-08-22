@@ -169,7 +169,8 @@ fi
 
 if grep -R -n -E \
   --include='*.swift' --include='*.h' --include='*.modulemap' --include='*.json' \
-  '/Users/|/home/|file:///|https?://[^[:space:]]+/(latest|main)(/|$)' "$IOS_DIR"; then
+  '/Users/|/home/|file:///|https?://[^[:space:]]+/(latest|main)(/|$)' \
+  "$FRAMEWORK" "$IOS_DIR/generated" "$IOS_DIR/CedarlingProvenance.swift" "$PROVENANCE_DIR"; then
   echo "iOS artifacts contain a machine-local path or mutable download URL" >&2
   exit 1
 fi

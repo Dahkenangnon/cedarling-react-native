@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/JanssenProject/jans.git",
+  "releaseTag": "v2.3.0",
+  "revision": "f7c6e34be6ac8d585a9d7b6f7a12921b440b495b",
+  "cedarlingCrateVersion": "2.3.0",
+  "cedarlingUniffiCrateVersion": "0.1.0",
+  "uniffiVersion": "0.29.5",
+  "uniffiLanguage": "swift",
+  "buildType": "release",
+  "cargoLocked": true,
+  "gitBlobLimitBytes": 104857600,
+  "rustVersion": "rustc 1.95.0 (59807616e 2026-04-14)",
+  "xcodeVersion": "Xcode 26.4.1 Build version 17E202",
+  "macosVersion": "26.5.2 (25F84)",
+  "protocVersion": "libprotoc 31.1",
+  "minimumIosVersion": "17.5",
+  "rustTargets": [
+    "aarch64-apple-ios",
+    "aarch64-apple-ios-sim"
+  ],
+  "supportedArchitectures": [
+    "ios-arm64",
+    "ios-simulator-arm64"
+  ],
+  "generatedBindingModule": "cedarling_uniffiFFI",
+  "buildCommands": [
+    "make build BUILD_TYPE=release CARGO_FLAGS='--release --locked'",
+    "IPHONEOS_DEPLOYMENT_TARGET=17.5 cargo build --release --locked -p cedarling_uniffi --target=aarch64-apple-ios-sim",
+    "IPHONEOS_DEPLOYMENT_TARGET=17.5 cargo build --release --locked -p cedarling_uniffi --target=aarch64-apple-ios",
+    "xcrun strip -S ../../target/aarch64-apple-ios-sim/release/libcedarling_uniffi.a && xcrun ranlib ../../target/aarch64-apple-ios-sim/release/libcedarling_uniffi.a",
+    "xcrun strip -S ../../target/aarch64-apple-ios/release/libcedarling_uniffi.a && xcrun ranlib ../../target/aarch64-apple-ios/release/libcedarling_uniffi.a",
+    "cargo run --locked --bin uniffi-bindgen generate --library ../../target/release/libcedarling_uniffi.dylib --language swift --out-dir ./build",
+    "make ios-xcframework BUILD_TYPE=release",
+    "find ios/Mobile.xcframework -type f -path '*/Headers/*.swift' -delete"
+  ],
+  "generatedAt": "2026-08-22T22:49:04Z",
+  "artifacts": [
+    {
+      "path": "CedarlingNative.xcframework/Info.plist",
+      "sha256": "e04599f6f4e48add43a4d376ea73b493ffe453699c5b5a1e2118f4fb5c07607c",
+      "sizeBytes": 1257
+    },
+    {
+      "path": "CedarlingNative.xcframework/ios-arm64-simulator/Headers/cedarling_uniffiFFI.h",
+      "sha256": "630a629328e377902f30e41f585ad412097ab89676ff2dfdf2cdc83c1a3d55f3",
+      "sizeBytes": 40478
+    },
+    {
+      "path": "CedarlingNative.xcframework/ios-arm64-simulator/Headers/module.modulemap",
+      "sha256": "06551fe1c4536961aae8b131eea380669948721464c8f296e13c37bf3a76976f",
+      "sizeBytes": 148
+    },
+    {
+      "path": "CedarlingNative.xcframework/ios-arm64-simulator/libcedarling_uniffi.a",
+      "sha256": "3dedebb931f71e10cde18fa2b23b1f7ed9272379aa576d94f2f0b8116849edd7",
+      "sizeBytes": 98965464
+    },
+    {
+      "path": "CedarlingNative.xcframework/ios-arm64/Headers/cedarling_uniffiFFI.h",
+      "sha256": "630a629328e377902f30e41f585ad412097ab89676ff2dfdf2cdc83c1a3d55f3",
+      "sizeBytes": 40478
+    },
+    {
+      "path": "CedarlingNative.xcframework/ios-arm64/Headers/module.modulemap",
+      "sha256": "06551fe1c4536961aae8b131eea380669948721464c8f296e13c37bf3a76976f",
+      "sizeBytes": 148
+    },
+    {
+      "path": "CedarlingNative.xcframework/ios-arm64/libcedarling_uniffi.a",
+      "sha256": "2b092453389006ec78cd09b96ddea3cfb6f08056ebeb1045950170097c788185",
+      "sizeBytes": 99220992
+    },
+    {
+      "path": "CedarlingProvenance.swift",
+      "sha256": "2df09933cbe21b78e47d01d772d759b5b43f3de0261cce5ab3e4efa017a3cb31",
+      "sizeBytes": 357
+    },
+    {
+      "path": "generated/cedarling_uniffi.swift",
+      "sha256": "b5495bad814472743dc78ecfdc8555ff266f815c9f346169da84d2fc17df2576",
+      "sizeBytes": 103347
+    }
+  ]
+}

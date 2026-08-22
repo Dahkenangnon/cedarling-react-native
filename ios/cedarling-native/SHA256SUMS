@@ -1,0 +1,9 @@
+e04599f6f4e48add43a4d376ea73b493ffe453699c5b5a1e2118f4fb5c07607c  ../CedarlingNative.xcframework/Info.plist
+630a629328e377902f30e41f585ad412097ab89676ff2dfdf2cdc83c1a3d55f3  ../CedarlingNative.xcframework/ios-arm64-simulator/Headers/cedarling_uniffiFFI.h
+06551fe1c4536961aae8b131eea380669948721464c8f296e13c37bf3a76976f  ../CedarlingNative.xcframework/ios-arm64-simulator/Headers/module.modulemap
+3dedebb931f71e10cde18fa2b23b1f7ed9272379aa576d94f2f0b8116849edd7  ../CedarlingNative.xcframework/ios-arm64-simulator/libcedarling_uniffi.a
+630a629328e377902f30e41f585ad412097ab89676ff2dfdf2cdc83c1a3d55f3  ../CedarlingNative.xcframework/ios-arm64/Headers/cedarling_uniffiFFI.h
+06551fe1c4536961aae8b131eea380669948721464c8f296e13c37bf3a76976f  ../CedarlingNative.xcframework/ios-arm64/Headers/module.modulemap
+2b092453389006ec78cd09b96ddea3cfb6f08056ebeb1045950170097c788185  ../CedarlingNative.xcframework/ios-arm64/libcedarling_uniffi.a
+2df09933cbe21b78e47d01d772d759b5b43f3de0261cce5ab3e4efa017a3cb31  ../CedarlingProvenance.swift
+b5495bad814472743dc78ecfdc8555ff266f815c9f346169da84d2fc17df2576  ../generated/cedarling_uniffi.swift
