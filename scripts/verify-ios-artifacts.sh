@@ -51,15 +51,35 @@ if (requiredTargets.size || requiredArchitectures.size) {
 }
 NODE
 
-if ! grep -q 'public class Cedarling' "$IOS_DIR/generated/cedarling_uniffi.swift"; then
+if ! grep -Eq '^(public|open) class Cedarling([ :]|$)' \
+  "$IOS_DIR/generated/cedarling_uniffi.swift"; then
   echo "Generated Swift binding is missing Cedarling" >&2
   exit 1
 fi
-if ! grep -q 'module cedarling_uniffiFFI' \
-  "$(find "$FRAMEWORK" -type f -name module.modulemap -print -quit)"; then
-  echo "XCFramework module map has an unexpected module name" >&2
+MODULE_MAPS=()
+while IFS= read -r module_map; do
+  MODULE_MAPS+=("$module_map")
+done < <(find "$FRAMEWORK" -type f -name module.modulemap -print | sort)
+HEADERS=()
+while IFS= read -r header; do
+  HEADERS+=("$header")
+done < <(find "$FRAMEWORK" -type f -name 'cedarling_uniffiFFI.h' -print | sort)
+if (( ${#MODULE_MAPS[@]} != 2 || ${#HEADERS[@]} != 2 )); then
+  echo "Expected a module map and public UniFFI header in both XCFramework slices" >&2
   exit 1
 fi
+for module_map in "${MODULE_MAPS[@]}"; do
+  if ! grep -q 'module cedarling_uniffiFFI' "$module_map"; then
+    echo "XCFramework module map has an unexpected module name: $module_map" >&2
+    exit 1
+  fi
+done
+for header in "${HEADERS[@]}"; do
+  if [[ ! -s "$header" ]] || ! grep -q 'cedarling_uniffi' "$header"; then
+    echo "XCFramework has an invalid public UniFFI header: $header" >&2
+    exit 1
+  fi
+done
 
 LIBRARIES=()
 while IFS= read -r library; do
@@ -82,6 +102,15 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
     fi
     if ! file "$library" | grep -q 'current ar archive'; then
       echo "Expected a static archive: $library" >&2
+      exit 1
+    fi
+    BUILD_METADATA="$(xcrun vtool -show-build "$library")"
+    if ! grep -q 'minos 16.4' <<< "$BUILD_METADATA"; then
+      echo "Static library does not record the iOS 16.4 deployment target: $library" >&2
+      exit 1
+    fi
+    if otool -L "$library" | grep -E '/Users/|/home/' >/dev/null; then
+      echo "Static library contains a machine-local dynamic dependency: $library" >&2
       exit 1
     fi
   done
@@ -115,8 +144,9 @@ else
   fi
 fi
 
-if rg -n '/Users/|/home/|file:///|https?://[^ ]+/(latest|main)(/|$)' "$IOS_DIR" \
-  --glob '*.swift' --glob '*.h' --glob '*.modulemap' --glob '*.json'; then
+if grep -R -n -E \
+  --include='*.swift' --include='*.h' --include='*.modulemap' --include='*.json' \
+  '/Users/|/home/|file:///|https?://[^[:space:]]+/(latest|main)(/|$)' "$IOS_DIR"; then
   echo "iOS artifacts contain a machine-local path or mutable download URL" >&2
   exit 1
 fi
@@ -146,6 +176,12 @@ process.stdin.on("end", () => {
   }
   if (!pack.files.some((file) => file.path.endsWith("libcedarling_uniffi.a"))) {
     throw new Error("npm package is missing Cedarling iOS static libraries");
+  }
+  const forbidden = pack.files
+    .map((file) => file.path)
+    .filter((path) => path.startsWith("ios/Tests/") || path.startsWith("example/"));
+  if (forbidden.length > 0) {
+    throw new Error("npm package contains development-only paths: " + forbidden.join(", "));
   }
   console.log(`npm iOS payload: ${pack.entryCount} files, ${pack.size} bytes packed`);
 });

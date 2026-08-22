@@ -116,7 +116,7 @@ if [[ ! -d "$UPSTREAM_FRAMEWORK" || ! -f "$UPSTREAM_SWIFT" ]]; then
   echo "Pinned build did not produce the expected XCFramework and Swift binding" >&2
   exit 1
 fi
-if ! grep -q 'public class Cedarling' "$UPSTREAM_SWIFT"; then
+if ! grep -Eq '^(public|open) class Cedarling([ :]|$)' "$UPSTREAM_SWIFT"; then
   echo "Generated Swift binding is missing Cedarling" >&2
   exit 1
 fi
