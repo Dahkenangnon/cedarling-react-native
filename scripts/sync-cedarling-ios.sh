@@ -110,14 +110,22 @@ export RUSTUP_TOOLCHAIN=1.95.0
 
 (
   cd "$BINDING_DIR"
-  make build BUILD_TYPE=release
+  make build BUILD_TYPE=release CARGO_FLAGS='--release --locked'
   IPHONEOS_DEPLOYMENT_TARGET="$MINIMUM_IOS_VERSION" \
-    cargo build --release -p cedarling_uniffi --target=aarch64-apple-ios-sim
+    cargo build --release --locked -p cedarling_uniffi --target=aarch64-apple-ios-sim
   IPHONEOS_DEPLOYMENT_TARGET="$MINIMUM_IOS_VERSION" \
-    cargo build --release -p cedarling_uniffi --target=aarch64-apple-ios
-  make ios-bindings BUILD_TYPE=release
+    cargo build --release --locked -p cedarling_uniffi --target=aarch64-apple-ios
+  cargo run --locked --bin uniffi-bindgen generate \
+    --library ../../target/release/libcedarling_uniffi.dylib \
+    --language swift \
+    --out-dir ./build
   make ios-xcframework BUILD_TYPE=release
 )
+
+if [[ -n "$(git -C "$JANS_REPO" status --porcelain --untracked-files=no)" ]]; then
+  echo "Pinned Jans tracked files changed during the locked build" >&2
+  exit 1
+fi
 
 UPSTREAM_FRAMEWORK="$BINDING_DIR/ios/Mobile.xcframework"
 UPSTREAM_SWIFT="$BINDING_DIR/build/cedarling_uniffi.swift"

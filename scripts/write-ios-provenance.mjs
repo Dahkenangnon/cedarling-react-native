@@ -1,14 +1,7 @@
 #!/usr/bin/env node
 
 import { createHash } from 'node:crypto';
-import {
-  lstatSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
+import { lstatSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -98,6 +91,7 @@ const provenance = {
   uniffiVersion: '0.29.5',
   uniffiLanguage: 'swift',
   buildType: 'release',
+  cargoLocked: true,
   rustVersion,
   xcodeVersion,
   macosVersion,
@@ -107,10 +101,10 @@ const provenance = {
   supportedArchitectures: ['ios-arm64', 'ios-simulator-arm64'],
   generatedBindingModule: 'cedarling_uniffiFFI',
   buildCommands: [
-    'make build BUILD_TYPE=release',
-    'IPHONEOS_DEPLOYMENT_TARGET=17.5 cargo build --release -p cedarling_uniffi --target=aarch64-apple-ios-sim',
-    'IPHONEOS_DEPLOYMENT_TARGET=17.5 cargo build --release -p cedarling_uniffi --target=aarch64-apple-ios',
-    'make ios-bindings BUILD_TYPE=release',
+    "make build BUILD_TYPE=release CARGO_FLAGS='--release --locked'",
+    'IPHONEOS_DEPLOYMENT_TARGET=17.5 cargo build --release --locked -p cedarling_uniffi --target=aarch64-apple-ios-sim',
+    'IPHONEOS_DEPLOYMENT_TARGET=17.5 cargo build --release --locked -p cedarling_uniffi --target=aarch64-apple-ios',
+    'cargo run --locked --bin uniffi-bindgen generate --library ../../target/release/libcedarling_uniffi.dylib --language swift --out-dir ./build',
     'make ios-xcframework BUILD_TYPE=release',
     "find ios/Mobile.xcframework -type f -path '*/Headers/*.swift' -delete",
   ],
@@ -122,7 +116,5 @@ mkdirSync(provenanceDir, { recursive: true });
 writeFileSync(join(provenanceDir, 'UPSTREAM.json'), `${JSON.stringify(provenance, null, 2)}\n`);
 writeFileSync(
   join(provenanceDir, 'SHA256SUMS'),
-  `${artifacts
-    .map((artifact) => `${artifact.sha256}  ../${artifact.path}`)
-    .join('\n')}\n`
+  `${artifacts.map((artifact) => `${artifact.sha256}  ../${artifact.path}`).join('\n')}\n`
 );

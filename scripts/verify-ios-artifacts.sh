@@ -42,6 +42,9 @@ if (provenance.revision !== 'f7c6e34be6ac8d585a9d7b6f7a12921b440b495b') {
 if (provenance.minimumIosVersion !== '17.5') {
   throw new Error('Unexpected minimum iOS version');
 }
+if (provenance.cargoLocked !== true) {
+  throw new Error('iOS artifacts were not generated with Cargo.lock enforcement');
+}
 for (const target of provenance.rustTargets ?? []) requiredTargets.delete(target);
 for (const architecture of provenance.supportedArchitectures ?? []) {
   requiredArchitectures.delete(architecture);
