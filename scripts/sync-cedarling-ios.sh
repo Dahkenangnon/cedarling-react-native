@@ -82,6 +82,7 @@ if [[ "$ALLOW_DIRTY" != true ]] && [[ -n "$(git -C "$JANS_REPO" status --porcela
 fi
 
 LIB_RS="$BINDING_DIR/src/lib.rs"
+APPLE_CONFIG="$JANS_REPO/jans-cedarling/.cargo/config.toml"
 for symbol in load_from_json load_from_json_with_archive_bytes authorize_unsigned authorize_multi_issuer; do
   if ! grep -q "pub fn $symbol" "$LIB_RS"; then
     echo "Pinned source is missing required API: $symbol" >&2
@@ -93,6 +94,14 @@ if ! grep -q 'aarch64-apple-ios-sim' "$BINDING_DIR/Makefile" ||
   echo "Pinned Makefile is missing the required Apple targets" >&2
   exit 1
 fi
+for apple_flag in \
+  '-miphoneos-version-min=17.5' \
+  '-mios-simulator-version-min=17.5'; do
+  if ! grep -Fq -- "$apple_flag" "$APPLE_CONFIG"; then
+    echo "Pinned Apple build configuration is missing $apple_flag" >&2
+    exit 1
+  fi
+done
 
 rustup toolchain install 1.95.0 --profile minimal
 rustup target add --toolchain 1.95.0 aarch64-apple-ios aarch64-apple-ios-sim

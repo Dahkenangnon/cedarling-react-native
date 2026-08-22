@@ -104,8 +104,16 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
       echo "Expected a static archive: $library" >&2
       exit 1
     fi
-    BUILD_METADATA="$(xcrun vtool -show-build "$library")"
-    if ! grep -q 'minos 17.5' <<< "$BUILD_METADATA"; then
+    if ! otool -l "$library" | awk '
+      $1 == "cmd" && ($2 == "LC_BUILD_VERSION" || $2 == "LC_VERSION_MIN_IPHONEOS") {
+        version_command = 1
+        next
+      }
+      version_command && (($1 == "minos" || $1 == "version") && $2 == "17.5") {
+        found = 1
+      }
+      END { exit found ? 0 : 1 }
+    '; then
       echo "Static library does not record the iOS 17.5 deployment target: $library" >&2
       exit 1
     fi
