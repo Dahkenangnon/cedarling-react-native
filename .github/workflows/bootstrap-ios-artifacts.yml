@@ -1,0 +1,56 @@
+name: Bootstrap iOS native artifacts
+
+on:
+  push:
+    branches: [feat/ios-ci]
+    paths:
+      - .github/workflows/bootstrap-ios-artifacts.yml
+      - ios/cedarling-native/PINNED_REVISION
+      - scripts/sync-cedarling-ios.sh
+      - scripts/verify-ios-artifacts.sh
+      - scripts/verify-native-pin.sh
+      - scripts/write-ios-provenance.mjs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bootstrap-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.4.app/Contents/Developer
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Check out pinned Jans source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: JanssenProject/jans
+          ref: f7c6e34be6ac8d585a9d7b6f7a12921b440b495b
+          path: _jans
+          persist-credentials: false
+
+      - name: Select and report toolchain
+        run: |
+          uname -m
+          xcodebuild -version
+          sw_vers
+
+      - name: Generate pinned iOS artifacts
+        run: scripts/sync-cedarling-ios.sh _jans
+
+      - name: Upload generated iOS directory
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cedarling-ios-native-${{ github.sha }}
+          path: ios
+          if-no-files-found: error
+          retention-days: 3
