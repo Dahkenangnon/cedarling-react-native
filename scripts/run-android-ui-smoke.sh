@@ -50,18 +50,33 @@ dump_ui() {
 
 find_bounds() {
   local label="$1"
-  UI_XML_PATH="$UI_XML" UI_LABEL="$label" node <<'NODE'
-const fs = require('node:fs');
-const xml = fs.readFileSync(process.env.UI_XML_PATH, 'utf8');
-const escaped = process.env.UI_LABEL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const element = xml.match(new RegExp('<node\\b(?=[^>]*\\btext="' + escaped + '")[^>]*>'));
-const bounds = element?.[0].match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
-if (bounds) {
-  const x = Math.round((Number(bounds[1]) + Number(bounds[3])) / 2);
-  const y = Math.round((Number(bounds[2]) + Number(bounds[4])) / 2);
-  process.stdout.write(x + ' ' + y);
+  node "$PROJECT_DIR/scripts/android-ui-bounds.mjs" "$UI_XML" text "$label"
 }
-NODE
+
+find_resource_bounds() {
+  local resource_id="$1"
+  node "$PROJECT_DIR/scripts/android-ui-bounds.mjs" "$UI_XML" resource-id "$resource_id"
+}
+
+dismiss_transient_system_anr() {
+  local bounds=""
+  local wait_x=""
+  local wait_y=""
+
+  if ! grep -Fq "text=\"Process system isn't responding\"" "$UI_XML" ||
+     ! grep -Fq 'resource-id="android:id/aerr_wait"' "$UI_XML"; then
+    return 1
+  fi
+
+  bounds="$(find_resource_bounds "android:id/aerr_wait")"
+  if [[ -z "$bounds" ]]; then
+    return 1
+  fi
+
+  read -r wait_x wait_y <<<"$bounds"
+  echo "Dismissing transient Android system ANR dialog" >&2
+  adb shell input tap "$wait_x" "$wait_y"
+  sleep 3
 }
 
 scroll_to_text() {
@@ -69,6 +84,9 @@ scroll_to_text() {
   local bounds=""
   for _ in $(seq 1 14); do
     dump_ui
+    if dismiss_transient_system_anr; then
+      continue
+    fi
     bounds="$(find_bounds "$label")"
     if [[ -n "$bounds" ]]; then
       printf '%s' "$bounds"
@@ -96,12 +114,16 @@ adb shell rm -f "$VIDEO_DEVICE"
 adb shell screenrecord --size 720x1280 --bit-rate 3000000 --time-limit 120 "$VIDEO_DEVICE" >/dev/null 2>&1 &
 adb shell am start -W -n "$APP_ID/$ACTIVITY"
 
-read -r button_x button_y <<<"$(scroll_to_text "Run native smoke tests")"
+button_bounds="$(scroll_to_text "Run native smoke tests")"
+read -r button_x button_y <<<"$button_bounds"
 adb shell input tap "$button_x" "$button_y"
 
 passed=false
 for _ in $(seq 1 45); do
   dump_ui
+  if dismiss_transient_system_anr; then
+    continue
+  fi
   if grep -Fq 'text="PASS"' "$UI_XML" &&
      grep -Fq 'text="ALLOW request: ALLOW · DENY request: DENY"' "$UI_XML"; then
     passed=true

@@ -56,6 +56,7 @@ jobs:
           npm run lint
           npm run typecheck
           npm test
+          npm run test:scripts
           npm run build
           npm run codegen
           npm --prefix example run typecheck

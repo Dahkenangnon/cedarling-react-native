@@ -10,6 +10,7 @@
     "lint": "eslint src/ demo/",
     "typecheck": "tsc --noEmit",
     "test": "node internal/module_scripts/test.js --runInBand",
+    "test:scripts": "node --test scripts/*.test.mjs",
     "codegen": "react-native codegen --path . --platform all",
     "test:android": "npm --prefix example run test:android",
     "test:android:instrumented": "npm --prefix example run test:android:instrumented",
