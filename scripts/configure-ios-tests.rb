@@ -45,13 +45,17 @@ resource_paths = [
 resource_refs = resource_paths.map { |path| tests_group.new_file(path.to_s) }
 resource_refs.each { |reference| unit_target.resources_build_phase.add_file_reference(reference) }
 
+app_configs = app_target.build_configurations.to_h { |configuration| [configuration.name, configuration] }
 unit_target.build_configurations.each do |configuration|
+  app_configuration = app_configs.fetch(configuration.name)
+  configuration.base_configuration_reference = app_configuration.base_configuration_reference
   configuration.build_settings.merge!(
     'ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES' => 'YES',
     'BUNDLE_LOADER' => '$(TEST_HOST)',
     'CODE_SIGNING_ALLOWED' => 'NO',
     'GENERATE_INFOPLIST_FILE' => 'YES',
     'IPHONEOS_DEPLOYMENT_TARGET' => '17.5',
+    'OTHER_LDFLAGS' => '',
     'PRODUCT_BUNDLE_IDENTIFIER' => "com.dahkenangnon.cedarlingreactnative.#{unit_name.downcase}",
     'PRODUCT_NAME' => unit_name,
     'SWIFT_VERSION' => '5.9',
