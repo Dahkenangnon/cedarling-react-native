@@ -242,7 +242,8 @@ jobs:
         with:
           api-level: 36
           arch: x86_64
-          target: aosp_atd
+          # ATD images disable hardware rendering and cannot produce review screenshots.
+          target: default
           profile: pixel_2
           disk-size: 4096M
           emulator-boot-timeout: 900
@@ -255,6 +256,7 @@ jobs:
         run: |
           test -s "$RUNNER_TEMP/cedarling-android-${{ matrix.kind }}/android-${{ matrix.kind }}-success.png"
           test -s "$RUNNER_TEMP/cedarling-android-${{ matrix.kind }}/android-${{ matrix.kind }}.mp4"
+          node scripts/verify-evidence-image.mjs "$RUNNER_TEMP/cedarling-android-${{ matrix.kind }}/android-${{ matrix.kind }}-success.png"
 
       - name: Upload Android screenshots, video, logs, and reports
         if: ${{ always() }}
@@ -371,6 +373,8 @@ jobs:
           ui_log="$RUNNER_TEMP/ios-${{ matrix.kind }}-ui-tests.log"
           ui_result="$RUNNER_TEMP/${{ matrix.app_name }}UITests.xcresult"
           ui_retry_result="$RUNNER_TEMP/${{ matrix.app_name }}UITestsRetry.xcresult"
+          selected_ui_result="$ui_result"
+          attachments_dir="$RUNNER_TEMP/ios-${{ matrix.kind }}-ui-attachments"
           video_pid=""
           start_video() {
             xcrun simctl io "$IOS_SIMULATOR_UDID" recordVideo --codec=h264 "$video" &
@@ -411,9 +415,11 @@ jobs:
             open -a Simulator --args -CurrentDeviceUDID "$IOS_SIMULATOR_UDID"
             start_video
             run_ui_tests "$ui_retry_result"
+            selected_ui_result="$ui_retry_result"
           fi
           cleanup
-          xcrun simctl io "$IOS_SIMULATOR_UDID" screenshot "$success_png"
+          xcrun xcresulttool export attachments --path "$selected_ui_result" --output-path "$attachments_dir"
+          node scripts/export-ios-success-screenshot.mjs "$attachments_dir/manifest.json" "$success_png"
           test -s "$success_png"
           test -s "$video"
           trap - ERR
@@ -447,6 +453,7 @@ jobs:
             ${{ runner.temp }}/ios-${{ matrix.kind }}-failure.png
             ${{ runner.temp }}/ios-${{ matrix.kind }}.mp4
             ${{ runner.temp }}/ios-${{ matrix.kind }}-attempt-1.mp4
+            ${{ runner.temp }}/ios-${{ matrix.kind }}-ui-attachments
             ${{ runner.temp }}/${{ matrix.app_name }}NativeTests.xcresult
             ${{ runner.temp }}/${{ matrix.app_name }}UITests*.xcresult
             ${{ runner.temp }}/ios-${{ matrix.kind }}-native-tests.log

@@ -113,7 +113,7 @@ Consumer builds do not need Rust, a Jans checkout, or a native download.
     npm run verify:native-pins
     npm run verify:package
 
-The [CI workflow](https://github.com/Dahkenangnon/cedarling-react-native/actions/workflows/ci.yml) is configured to build and exercise Expo and bare applications on Android and iOS. Each runtime job requires and uploads a PASS screenshot and short evidence video, plus logs, reports, and—in iOS jobs—the complete XCResult bundle. Simulator and unsigned device-link checks require neither an Apple Developer account nor signing credentials.
+The [CI workflow](https://github.com/Dahkenangnon/cedarling-react-native/actions/workflows/ci.yml) is configured to build and exercise Expo and bare applications on Android and iOS. Each runtime job requires and uploads a validated PASS screenshot and short evidence video, plus logs, reports, and—in iOS jobs—the complete XCResult bundle. Android rejects uniform display captures; iOS exports the named keep-always XCTest PASS attachment as the standalone PNG. Simulator and unsigned device-link checks require neither an Apple Developer account nor signing credentials.
 
 ## Documentation
 

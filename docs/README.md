@@ -243,9 +243,9 @@ For each Expo and bare Android application, CI:
 - runs Codegen, JVM tests, Android lint, and real vendored-Rust instrumentation;
 - builds release APK and AAB outputs;
 - verifies all four ABIs, RELRO, 16 KiB alignment, JNA, and bundle page-alignment metadata;
-- runs the release app on an API 36 x86_64 emulator;
+- runs the release app on a standard API 36 x86_64 AOSP emulator with display rendering enabled;
 - executes the real JavaScript-to-Rust ALLOW/DENY UI path;
-- requires a downloadable PASS PNG and a short MP4 rendered from real emulator screen frames after PASS;
+- requires a non-uniform downloadable PASS PNG and a short MP4 rendered from real emulator screen frames after PASS;
 - retains a failure PNG, logcat, test reports, and the UI hierarchy.
 
 For each Expo and bare iOS application, CI:
@@ -253,7 +253,7 @@ For each Expo and bare iOS application, CI:
 - installs CocoaPods dependencies and verifies Cedarling autolinking;
 - runs native Swift tests against the real vendored Rust simulator slice;
 - runs the JavaScript-to-Rust ALLOW/DENY path in an arm64 iPhone Simulator;
-- stores a keep-always XCTest screenshot attachment and a directly downloadable PNG;
+- stores a keep-always XCTest screenshot attachment and exports that named attachment as the directly downloadable PNG;
 - retains failure screenshots, simulator video, logs, and complete XCResult bundles;
 - compiles and links an unsigned generic arm64 iPhone build.
 

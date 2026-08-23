@@ -11,6 +11,7 @@ VIDEO_LOCAL="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}.mp4"
 VIDEO_LOG="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-video-render.txt"
 VIDEO_FRAMES="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-video-frames"
 LOGCAT="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-logcat.txt"
+SCREENSHOT_STATS="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-screenshot-stats.txt"
 
 case "$EXAMPLE_KIND" in
   expo)
@@ -35,12 +36,41 @@ mkdir -p "$ARTIFACT_ROOT"
 rm -f "$VIDEO_LOCAL" "$VIDEO_LOG"
 
 capture_diagnostics() {
+  local exit_status=$?
+
   adb logcat -d > "$LOGCAT" || true
-  if [[ ! -s "$SUCCESS_SCREENSHOT" ]]; then
+  if ((exit_status != 0)); then
     adb exec-out screencap -p > "$FAILURE_SCREENSHOT" || true
   fi
+  return "$exit_status"
 }
 trap capture_diagnostics EXIT
+
+wake_display() {
+  adb shell settings put system screen_off_timeout 2147483647
+  adb shell svc power stayon true
+  adb shell input keyevent KEYCODE_WAKEUP
+  adb shell wm dismiss-keyguard || true
+  sleep 1
+}
+
+capture_success_screenshot() {
+  local attempt=""
+
+  for attempt in $(seq 1 3); do
+    wake_display
+    adb exec-out screencap -p > "$SUCCESS_SCREENSHOT"
+    if node "$PROJECT_DIR/scripts/verify-evidence-image.mjs" \
+      "$SUCCESS_SCREENSHOT" > "$SCREENSHOT_STATS" 2>&1; then
+      return 0
+    fi
+    echo "Android screenshot validation failed on attempt $attempt" >&2
+    sleep 2
+  done
+
+  cat "$SCREENSHOT_STATS" >&2
+  return 1
+}
 
 render_evidence_video() {
   local frame_index=""
@@ -48,6 +78,7 @@ render_evidence_video() {
 
   command -v ffmpeg >/dev/null
   mkdir -p "$VIDEO_FRAMES"
+  wake_display
 
   for frame_index in $(seq 1 16); do
     printf -v frame_path '%s/frame-%03d.png' "$VIDEO_FRAMES" "$frame_index"
@@ -138,6 +169,7 @@ test -s "$APK"
 adb install -r "$APK"
 adb shell am force-stop "$APP_ID"
 adb logcat -c
+wake_display
 adb shell am start -W -n "$APP_ID/$ACTIVITY"
 
 button_bounds="$(scroll_to_text "Run native smoke tests")"
@@ -165,10 +197,9 @@ fi
 
 scroll_to_text "ALLOW request: ALLOW · DENY request: DENY" >/dev/null
 dump_ui
-adb exec-out screencap -p > "$SUCCESS_SCREENSHOT"
-test -s "$SUCCESS_SCREENSHOT"
 grep -Fq 'text="PASS"' "$UI_XML"
 grep -Fq 'text="ALLOW request: ALLOW · DENY request: DENY"' "$UI_XML"
+capture_success_screenshot
 render_evidence_video
 
 echo "Android $EXAMPLE_KIND JavaScript-to-Rust smoke test passed"
