@@ -49,6 +49,28 @@ export function serializeJsonObject(value: unknown, label: string): string {
   return JSON.stringify(value);
 }
 
+export function serializeJsonValue(value: unknown, label: string): string {
+  assertJsonValue(value, label, new Set<object>());
+  return JSON.stringify(value);
+}
+
+export function validateNonemptyString(value: unknown, label: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new CedarlingError('E_INVALID_INPUT', label + ' must be a nonempty string');
+  }
+  return value;
+}
+
+export function validateTtlSeconds(value: unknown): number | null {
+  if (value === undefined) {
+    return null;
+  }
+  if (!Number.isSafeInteger(value) || (value as number) < 0) {
+    throw new CedarlingError('E_INVALID_INPUT', 'ttlSeconds must be a non-negative safe integer');
+  }
+  return value as number;
+}
+
 export function serializeBootstrap(bootstrap: JsonObject | string): string {
   if (typeof bootstrap !== 'string') {
     return serializeJsonObject(bootstrap, 'bootstrap');

@@ -1,12 +1,25 @@
 import { CedarlingError, normalizeCedarlingError } from './errors';
-import { mapAuthorizeResult, mapNativeInfo } from './result';
+import {
+  mapAuthorizeResult,
+  mapDataEntries,
+  mapDataEntry,
+  mapDataStoreStats,
+  mapDataValue,
+  mapNativeInfo,
+  mapString,
+  mapStringArray,
+  mapTrustedIssuerSummary,
+} from './result';
 import type { CedarlingApi, CedarlingNativeModule } from './types';
 import {
   serializeBootstrap,
   serializeContext,
   serializeEntity,
+  serializeJsonValue,
   serializeTokens,
   validateAction,
+  validateNonemptyString,
+  validateTtlSeconds,
 } from './validation';
 
 function invalidInput(error: TypeError): CedarlingError {
@@ -84,6 +97,163 @@ export function createCedarlingApi(nativeModule: CedarlingNativeModule): Cedarli
           throw invalidInput(error);
         }
         throw normalizeCedarlingError(error, 'E_AUTHORIZATION');
+      }
+    },
+
+    async getLogIds() {
+      try {
+        return mapStringArray(await nativeModule.getLogIds(), 'native log IDs');
+      } catch (error) {
+        throw normalizeCedarlingError(error, 'E_LOGGING');
+      }
+    },
+
+    async getLogById(id) {
+      try {
+        return mapString(
+          await nativeModule.getLogById(validateNonemptyString(id, 'log id')),
+          'native log'
+        );
+      } catch (error) {
+        throw normalizeCedarlingError(error, 'E_LOGGING');
+      }
+    },
+
+    async getLogsByRequestId(requestId) {
+      try {
+        return mapStringArray(
+          await nativeModule.getLogsByRequestId(validateNonemptyString(requestId, 'request id')),
+          'native logs'
+        );
+      } catch (error) {
+        throw normalizeCedarlingError(error, 'E_LOGGING');
+      }
+    },
+
+    async getLogsByRequestIdAndTag(requestId, tag) {
+      try {
+        return mapStringArray(
+          await nativeModule.getLogsByRequestIdAndTag(
+            validateNonemptyString(requestId, 'request id'),
+            validateNonemptyString(tag, 'log tag')
+          ),
+          'native logs'
+        );
+      } catch (error) {
+        throw normalizeCedarlingError(error, 'E_LOGGING');
+      }
+    },
+
+    async getLogsByTag(tag) {
+      try {
+        return mapStringArray(
+          await nativeModule.getLogsByTag(validateNonemptyString(tag, 'log tag')),
+          'native logs'
+        );
+      } catch (error) {
+        throw normalizeCedarlingError(error, 'E_LOGGING');
+      }
+    },
+
+    async popLogs() {
+      try {
+        return mapStringArray(await nativeModule.popLogs(), 'native logs');
+      } catch (error) {
+        throw normalizeCedarlingError(error, 'E_LOGGING');
+      }
+    },
+
+    async pushDataContext(key, value, ttlSeconds) {
+      try {
+        await nativeModule.pushDataContext(
+          validateNonemptyString(key, 'data context key'),
+          serializeJsonValue(value, 'data context value'),
+          validateTtlSeconds(ttlSeconds)
+        );
+      } catch (error) {
+        throw normalizeCedarlingError(error, 'E_DATA_CONTEXT');
+      }
+    },
+
+    async getDataContext(key) {
+      try {
+        return mapDataValue(
+          await nativeModule.getDataContext(validateNonemptyString(key, 'data context key'))
+        );
+      } catch (error) {
+        throw normalizeCedarlingError(error, 'E_DATA_CONTEXT');
+      }
+    },
+
+    async getDataContextEntry(key) {
+      try {
+        return mapDataEntry(
+          await nativeModule.getDataContextEntry(validateNonemptyString(key, 'data context key'))
+        );
+      } catch (error) {
+        throw normalizeCedarlingError(error, 'E_DATA_CONTEXT');
+      }
+    },
+
+    async removeDataContext(key) {
+      try {
+        return await nativeModule.removeDataContext(
+          validateNonemptyString(key, 'data context key')
+        );
+      } catch (error) {
+        throw normalizeCedarlingError(error, 'E_DATA_CONTEXT');
+      }
+    },
+
+    async clearDataContext() {
+      try {
+        await nativeModule.clearDataContext();
+      } catch (error) {
+        throw normalizeCedarlingError(error, 'E_DATA_CONTEXT');
+      }
+    },
+
+    async listDataContext() {
+      try {
+        return mapDataEntries(await nativeModule.listDataContext());
+      } catch (error) {
+        throw normalizeCedarlingError(error, 'E_DATA_CONTEXT');
+      }
+    },
+
+    async getDataContextStats() {
+      try {
+        return mapDataStoreStats(await nativeModule.getDataContextStats());
+      } catch (error) {
+        throw normalizeCedarlingError(error, 'E_DATA_CONTEXT');
+      }
+    },
+
+    async isTrustedIssuerLoadedByName(name) {
+      try {
+        return await nativeModule.isTrustedIssuerLoadedByName(
+          validateNonemptyString(name, 'trusted issuer name')
+        );
+      } catch (error) {
+        throw normalizeCedarlingError(error);
+      }
+    },
+
+    async isTrustedIssuerLoadedByIssuer(issuer) {
+      try {
+        return await nativeModule.isTrustedIssuerLoadedByIssuer(
+          validateNonemptyString(issuer, 'trusted issuer URL')
+        );
+      } catch (error) {
+        throw normalizeCedarlingError(error);
+      }
+    },
+
+    async getTrustedIssuerSummary() {
+      try {
+        return mapTrustedIssuerSummary(await nativeModule.getTrustedIssuerSummary());
+      } catch (error) {
+        throw normalizeCedarlingError(error);
       }
     },
 

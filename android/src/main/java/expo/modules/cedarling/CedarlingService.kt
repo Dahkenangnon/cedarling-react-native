@@ -10,6 +10,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.jans.cedarling.CedarlingAndroid
 import uniffi.cedarling_uniffi.Cedarling
+import uniffi.cedarling_uniffi.DataEntry
+import uniffi.cedarling_uniffi.DataStoreStats
 import uniffi.cedarling_uniffi.EntityData
 import uniffi.cedarling_uniffi.TokenInput
 
@@ -130,6 +132,90 @@ internal class CedarlingService(context: Context) {
       }
     }
 
+  suspend fun getLogIds(): List<String> = withInstance { it.getLogIds() }
+
+  suspend fun getLogById(id: String): String =
+    withLogOperation {
+      CedarlingJson.requireNonemptyString(id, "log id")
+      it.getLogById(id)
+    }
+
+  suspend fun getLogsByRequestId(requestId: String): List<String> =
+    withLogOperation {
+      CedarlingJson.requireNonemptyString(requestId, "request id")
+      it.getLogsByRequestId(requestId)
+    }
+
+  suspend fun getLogsByRequestIdAndTag(requestId: String, tag: String): List<String> =
+    withLogOperation {
+      CedarlingJson.requireNonemptyString(requestId, "request id")
+      CedarlingJson.requireNonemptyString(tag, "log tag")
+      it.getLogsByRequestIdAndTag(requestId, tag)
+    }
+
+  suspend fun getLogsByTag(tag: String): List<String> =
+    withLogOperation {
+      CedarlingJson.requireNonemptyString(tag, "log tag")
+      it.getLogsByTag(tag)
+    }
+
+  suspend fun popLogs(): List<String> = withLogOperation { it.popLogs() }
+
+  suspend fun pushDataContext(key: String, valueJson: String, ttlSeconds: Double?) =
+    withDataOperation {
+      CedarlingJson.requireNonemptyString(key, "data context key")
+      CedarlingJson.requireJsonValue(valueJson, "data context value")
+      it.pushDataCtx(key, valueJson, validateTtlSeconds(ttlSeconds))
+    }
+
+  suspend fun getDataContext(key: String): String? =
+    withDataOperation {
+      CedarlingJson.requireNonemptyString(key, "data context key")
+      it.getDataCtx(key)
+    }
+
+  suspend fun getDataContextEntry(key: String): Map<String, Any>? =
+    withDataOperation {
+      CedarlingJson.requireNonemptyString(key, "data context key")
+      it.getDataEntryCtx(key)?.let(::mapDataEntry)
+    }
+
+  suspend fun removeDataContext(key: String): Boolean =
+    withDataOperation {
+      CedarlingJson.requireNonemptyString(key, "data context key")
+      it.removeDataCtx(key)
+    }
+
+  suspend fun clearDataContext() = withDataOperation { it.clearDataCtx() }
+
+  suspend fun listDataContext(): List<Map<String, Any>> =
+    withDataOperation { cedarling -> cedarling.listDataCtx().map(::mapDataEntry) }
+
+  suspend fun getDataContextStats(): Map<String, Any> =
+    withDataOperation { mapDataStoreStats(it.getStatsCtx()) }
+
+  suspend fun isTrustedIssuerLoadedByName(name: String): Boolean =
+    withInstance {
+      CedarlingJson.requireNonemptyString(name, "trusted issuer name")
+      it.isTrustedIssuerLoadedByName(name)
+    }
+
+  suspend fun isTrustedIssuerLoadedByIssuer(issuer: String): Boolean =
+    withInstance {
+      CedarlingJson.requireNonemptyString(issuer, "trusted issuer URL")
+      it.isTrustedIssuerLoadedByIss(issuer)
+    }
+
+  suspend fun trustedIssuerSummary(): Map<String, Any> =
+    withInstance {
+      mapOf(
+        "total" to it.totalIssuers().toDouble(),
+        "loaded" to it.loadedTrustedIssuersCount().toDouble(),
+        "loadedIds" to it.loadedTrustedIssuerIds(),
+        "failedIds" to it.failedTrustedIssuerIds()
+      )
+    }
+
   suspend fun dispose() =
     onIo {
       mutex.withLock {
@@ -195,6 +281,76 @@ internal class CedarlingService(context: Context) {
       cedarling.destroy()
     }
   }
+
+  private suspend fun <T> withInstance(operation: (Cedarling) -> T): T =
+    onIo {
+      mutex.withLock {
+        ensureUsable()
+        operation(requireInstance())
+      }
+    }
+
+  private suspend fun <T> withLogOperation(operation: (Cedarling) -> T): T =
+    try {
+      withInstance(operation)
+    } catch (error: CedarlingSdkException) {
+      throw error
+    } catch (error: Exception) {
+      throw CedarlingSdkException(
+        CedarlingErrorCode.LOGGING,
+        error.messageOrFallback("Cedarling log operation failed"),
+        error
+      )
+    }
+
+  private suspend fun <T> withDataOperation(operation: (Cedarling) -> T): T =
+    try {
+      withInstance(operation)
+    } catch (error: CedarlingSdkException) {
+      throw error
+    } catch (error: Exception) {
+      throw CedarlingSdkException(
+        CedarlingErrorCode.DATA_CONTEXT,
+        error.messageOrFallback("Cedarling data-context operation failed"),
+        error
+      )
+    }
+
+  private fun validateTtlSeconds(value: Double?): Long? {
+    if (value == null) {
+      return null
+    }
+    if (!value.isFinite() || value < 0 || value % 1.0 != 0.0 || value > 9_007_199_254_740_991.0) {
+      throw CedarlingSdkException(
+        CedarlingErrorCode.INVALID_INPUT,
+        "ttlSeconds must be a non-negative safe integer"
+      )
+    }
+    return value.toLong()
+  }
+
+  private fun mapDataEntry(entry: DataEntry): Map<String, Any> =
+    mapOf(
+      "key" to entry.key,
+      "valueJson" to entry.value,
+      "dataType" to entry.dataType,
+      "createdAt" to entry.createdAt,
+      "expiresAt" to entry.expiresAt,
+      "accessCount" to entry.accessCount.toDouble()
+    )
+
+  private fun mapDataStoreStats(stats: DataStoreStats): Map<String, Any> =
+    mapOf(
+      "entryCount" to stats.entryCount.toDouble(),
+      "maxEntries" to stats.maxEntries.toDouble(),
+      "maxEntrySize" to stats.maxEntrySize.toDouble(),
+      "metricsEnabled" to stats.metricsEnabled,
+      "totalSizeBytes" to stats.totalSizeBytes.toDouble(),
+      "averageEntrySizeBytes" to stats.avgEntrySizeBytes.toDouble(),
+      "capacityUsagePercent" to stats.capacityUsagePercent,
+      "memoryAlertThreshold" to stats.memoryAlertThreshold,
+      "memoryAlertTriggered" to stats.memoryAlertTriggered
+    )
 
   private suspend fun <T> onIo(block: suspend () -> T): T =
     withContext(Dispatchers.IO) { block() }

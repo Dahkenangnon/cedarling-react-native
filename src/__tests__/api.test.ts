@@ -35,6 +35,44 @@ function nativeModule(): jest.Mocked<CedarlingNativeModule> {
       requestId: 'request-2',
       diagnostics: { reasons: [], errors: [] },
     }),
+    getLogIds: jest.fn().mockResolvedValue(['log-1']),
+    getLogById: jest.fn().mockResolvedValue('{"id":"log-1","log_level":"INFO"}'),
+    getLogsByRequestId: jest.fn().mockResolvedValue(['{"request_id":"request-1"}']),
+    getLogsByRequestIdAndTag: jest.fn().mockResolvedValue(['{"log_kind":"authz"}']),
+    getLogsByTag: jest.fn().mockResolvedValue(['{"log_level":"INFO"}']),
+    popLogs: jest.fn().mockResolvedValue(['{"id":"log-1"}']),
+    pushDataContext: jest.fn().mockResolvedValue(undefined),
+    getDataContext: jest.fn().mockResolvedValue('{"enabled":true}'),
+    getDataContextEntry: jest.fn().mockResolvedValue({
+      key: 'demo',
+      valueJson: '{"enabled":true}',
+      dataType: 'Record',
+      createdAt: '2026-08-23T12:00:00Z',
+      expiresAt: '',
+      accessCount: 1,
+    }),
+    removeDataContext: jest.fn().mockResolvedValue(true),
+    clearDataContext: jest.fn().mockResolvedValue(undefined),
+    listDataContext: jest.fn().mockResolvedValue([]),
+    getDataContextStats: jest.fn().mockResolvedValue({
+      entryCount: 1,
+      maxEntries: 100,
+      maxEntrySize: 4096,
+      metricsEnabled: true,
+      totalSizeBytes: 16,
+      averageEntrySizeBytes: 16,
+      capacityUsagePercent: 1,
+      memoryAlertThreshold: 80,
+      memoryAlertTriggered: false,
+    }),
+    isTrustedIssuerLoadedByName: jest.fn().mockResolvedValue(false),
+    isTrustedIssuerLoadedByIssuer: jest.fn().mockResolvedValue(false),
+    getTrustedIssuerSummary: jest.fn().mockResolvedValue({
+      total: 0,
+      loaded: 0,
+      loadedIds: [],
+      failedIds: [],
+    }),
     dispose: jest.fn().mockResolvedValue(undefined),
     getNativeInfo: jest.fn().mockResolvedValue({
       sdkVersion: '0.1.0',
@@ -113,6 +151,64 @@ describe('Cedarling TypeScript boundary', () => {
       JSON.stringify(resource),
       '{}'
     );
+  });
+
+  test('preserves raw Cedarling logs and validates filters', async () => {
+    const native = nativeModule();
+    const api = createCedarlingApi(native);
+
+    await expect(api.getLogIds()).resolves.toEqual(['log-1']);
+    await expect(api.getLogById('log-1')).resolves.toBe('{"id":"log-1","log_level":"INFO"}');
+    await expect(api.getLogsByRequestIdAndTag('request-1', 'authz')).resolves.toEqual([
+      '{"log_kind":"authz"}',
+    ]);
+    await expect(api.getLogsByTag('   ')).rejects.toMatchObject({ code: 'E_INVALID_INPUT' });
+    expect(native.getLogsByTag).not.toHaveBeenCalled();
+  });
+
+  test('serializes and maps data-context values and metadata', async () => {
+    const native = nativeModule();
+    const api = createCedarlingApi(native);
+
+    await api.pushDataContext('demo', { enabled: true }, 60);
+    expect(native.pushDataContext).toHaveBeenCalledWith('demo', '{"enabled":true}', 60);
+    await expect(api.getDataContext('demo')).resolves.toEqual({ enabled: true });
+    await expect(api.getDataContextEntry('demo')).resolves.toEqual({
+      key: 'demo',
+      value: { enabled: true },
+      dataType: 'Record',
+      createdAt: '2026-08-23T12:00:00Z',
+      expiresAt: null,
+      accessCount: 1,
+    });
+    await expect(api.getDataContextStats()).resolves.toMatchObject({
+      entryCount: 1,
+      averageEntrySizeBytes: 16,
+      memoryAlertTriggered: false,
+    });
+  });
+
+  test('rejects invalid data-context TTL before native invocation', async () => {
+    const native = nativeModule();
+    const api = createCedarlingApi(native);
+
+    await expect(api.pushDataContext('demo', true, -1)).rejects.toMatchObject({
+      code: 'E_INVALID_INPUT',
+    });
+    expect(native.pushDataContext).not.toHaveBeenCalled();
+  });
+
+  test('maps trusted issuer diagnostics', async () => {
+    const native = nativeModule();
+    const api = createCedarlingApi(native);
+
+    await expect(api.getTrustedIssuerSummary()).resolves.toEqual({
+      total: 0,
+      loaded: 0,
+      loadedIds: [],
+      failedIds: [],
+    });
+    await expect(api.isTrustedIssuerLoadedByName('demo')).resolves.toBe(false);
   });
 
   test('maps the complete native authorization result', async () => {
@@ -252,5 +348,6 @@ describe('Cedarling TypeScript boundary', () => {
         'cedarling-react-native supports Android and iOS; received Web'
       )
     );
+    await expect(api.getLogIds()).rejects.toMatchObject({ code: 'E_UNSUPPORTED_PLATFORM' });
   });
 });

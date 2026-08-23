@@ -37,6 +37,50 @@ class CedarlingReactNativeModule : Module() {
       requireService().authorizeMultiIssuer(tokensJson, action, resourceJson, contextJson)
     }
 
+    AsyncFunction("getLogIds") Coroutine { -> requireService().getLogIds() }
+    AsyncFunction("getLogById") Coroutine { id: String -> requireService().getLogById(id) }
+    AsyncFunction("getLogsByRequestId") Coroutine { requestId: String ->
+      requireService().getLogsByRequestId(requestId)
+    }
+    AsyncFunction("getLogsByRequestIdAndTag") Coroutine { requestId: String, tag: String ->
+      requireService().getLogsByRequestIdAndTag(requestId, tag)
+    }
+    AsyncFunction("getLogsByTag") Coroutine { tag: String ->
+      requireService().getLogsByTag(tag)
+    }
+    AsyncFunction("popLogs") Coroutine { -> requireService().popLogs() }
+
+    AsyncFunction("pushDataContext") Coroutine {
+        key: String,
+        valueJson: String,
+        ttlSeconds: Double? ->
+      requireService().pushDataContext(key, valueJson, ttlSeconds)
+    }
+    AsyncFunction("getDataContext") Coroutine { key: String ->
+      requireService().getDataContext(key)
+    }
+    AsyncFunction("getDataContextEntry") Coroutine { key: String ->
+      requireService().getDataContextEntry(key)
+    }
+    AsyncFunction("removeDataContext") Coroutine { key: String ->
+      requireService().removeDataContext(key)
+    }
+    AsyncFunction("clearDataContext") Coroutine { -> requireService().clearDataContext() }
+    AsyncFunction("listDataContext") Coroutine { -> requireService().listDataContext() }
+    AsyncFunction("getDataContextStats") Coroutine { ->
+      requireService().getDataContextStats()
+    }
+
+    AsyncFunction("isTrustedIssuerLoadedByName") Coroutine { name: String ->
+      requireService().isTrustedIssuerLoadedByName(name)
+    }
+    AsyncFunction("isTrustedIssuerLoadedByIssuer") Coroutine { issuer: String ->
+      requireService().isTrustedIssuerLoadedByIssuer(issuer)
+    }
+    AsyncFunction("getTrustedIssuerSummary") Coroutine { ->
+      requireService().trustedIssuerSummary()
+    }
+
     AsyncFunction("dispose") Coroutine { ->
       requireService().dispose()
     }

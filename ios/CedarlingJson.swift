@@ -11,6 +11,18 @@ internal enum CedarlingJson {
     try requireObject(value, label: "context")
   }
 
+  static func requireJsonValue(_ value: String, label: String) throws {
+    _ = try parse(value, label: label)
+  }
+
+  static func requireNonemptyString(_ value: String, label: String) throws -> String {
+    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else {
+      throw CedarlingModuleError(.invalidInput, "\(label) must be a nonempty string")
+    }
+    return value
+  }
+
   @discardableResult
   static func requireEntity(_ value: String, label: String) throws -> [String: Any] {
     let object = try requireObject(value, label: label)
@@ -26,11 +38,7 @@ internal enum CedarlingJson {
   }
 
   static func requireAction(_ value: String) throws -> String {
-    let action = value.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !action.isEmpty else {
-      throw CedarlingModuleError(.invalidInput, "action must be a nonempty string")
-    }
-    return action
+    try requireNonemptyString(value, label: "action")
   }
 
   static func parseTokens(_ value: String) throws -> [TokenInput] {

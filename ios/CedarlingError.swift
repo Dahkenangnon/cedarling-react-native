@@ -9,6 +9,8 @@ internal enum CedarlingErrorCode: String {
   case archiveTooLarge = "E_ARCHIVE_TOO_LARGE"
   case initialization = "E_INITIALIZATION"
   case authorization = "E_AUTHORIZATION"
+  case logging = "E_LOGGING"
+  case dataContext = "E_DATA_CONTEXT"
   case nativeResultInconsistent = "E_NATIVE_RESULT_INCONSISTENT"
   case native = "E_NATIVE"
 }

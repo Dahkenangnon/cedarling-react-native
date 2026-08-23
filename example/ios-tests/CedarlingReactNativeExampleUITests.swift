@@ -11,6 +11,7 @@ final class CedarlingReactNativeExampleUITests: XCTestCase {
 
     let runButton = app.buttons["run-native-smoke-tests"]
     XCTAssertTrue(runButton.waitForExistence(timeout: 15))
+    scrollToHittable(runButton, in: app)
     runButton.tap()
 
     let pass = NSPredicate(format: "label == 'PASS'")
@@ -24,11 +25,19 @@ final class CedarlingReactNativeExampleUITests: XCTestCase {
 
     let reinitializeButton = app.buttons["dispose-and-reinitialize"]
     XCTAssertTrue(reinitializeButton.isEnabled)
+    scrollToHittable(reinitializeButton, in: app)
     reinitializeButton.tap()
     let secondRun = NSPredicate(format: "label == '2'")
     expectation(for: secondRun, evaluatedWith: app.staticTexts["completed-runs-value"])
     waitForExpectations(timeout: 60)
     XCTAssertEqual(app.staticTexts["overall-status-value"].label, "PASS")
     XCTAssertFalse(app.otherElements["smoke-error"].exists)
+  }
+
+  private func scrollToHittable(_ element: XCUIElement, in app: XCUIApplication) {
+    for _ in 0..<8 where !element.isHittable {
+      app.swipeUp()
+    }
+    XCTAssertTrue(element.isHittable)
   }
 }

@@ -89,7 +89,7 @@ fi
 
 LIB_RS="$BINDING_DIR/src/lib.rs"
 APPLE_CONFIG="$JANS_REPO/jans-cedarling/.cargo/config.toml"
-for symbol in load_from_json load_from_json_with_archive_bytes authorize_unsigned authorize_multi_issuer; do
+for symbol in load_from_json load_from_json_with_archive_bytes authorize_unsigned authorize_multi_issuer get_log_by_id get_log_ids get_logs_by_request_id get_logs_by_request_id_and_tag get_logs_by_tag pop_logs push_data_ctx get_data_ctx get_data_entry_ctx remove_data_ctx clear_data_ctx list_data_ctx get_stats_ctx is_trusted_issuer_loaded_by_name is_trusted_issuer_loaded_by_iss total_issuers loaded_trusted_issuers_count loaded_trusted_issuer_ids failed_trusted_issuer_ids; do
   if ! grep -q "pub fn $symbol" "$LIB_RS"; then
     echo "Pinned source is missing required API: $symbol" >&2
     exit 1

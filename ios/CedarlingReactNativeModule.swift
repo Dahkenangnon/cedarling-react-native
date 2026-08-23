@@ -55,6 +55,91 @@ public final class CedarlingReactNativeModule: Module {
     }
     .runOnQueue(service.queue)
 
+    AsyncFunction("getLogIds") { [service] () throws -> [String] in
+      try Self.bridge { try service.getLogIds() }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("getLogById") { [service] (id: String) throws -> String in
+      try Self.bridge { try service.getLogById(id) }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("getLogsByRequestId") { [service] (requestId: String) throws -> [String] in
+      try Self.bridge { try service.getLogsByRequestId(requestId) }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("getLogsByRequestIdAndTag") { [service]
+      (requestId: String, tag: String) throws -> [String] in
+      try Self.bridge { try service.getLogsByRequestIdAndTag(requestId, tag: tag) }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("getLogsByTag") { [service] (tag: String) throws -> [String] in
+      try Self.bridge { try service.getLogsByTag(tag) }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("popLogs") { [service] () throws -> [String] in
+      try Self.bridge { try service.popLogs() }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("pushDataContext") { [service]
+      (key: String, valueJson: String, ttlSeconds: Double?) throws in
+      try Self.bridge {
+        try service.pushDataContext(key: key, valueJson: valueJson, ttlSeconds: ttlSeconds)
+      }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("getDataContext") { [service] (key: String) throws -> String? in
+      try Self.bridge { try service.getDataContext(key) }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("getDataContextEntry") { [service]
+      (key: String) throws -> [String: Any]? in
+      try Self.bridge { try service.getDataContextEntry(key) }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("removeDataContext") { [service] (key: String) throws -> Bool in
+      try Self.bridge { try service.removeDataContext(key) }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("clearDataContext") { [service] in
+      try Self.bridge { try service.clearDataContext() }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("listDataContext") { [service] () throws -> [[String: Any]] in
+      try Self.bridge { try service.listDataContext() }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("getDataContextStats") { [service] () throws -> [String: Any] in
+      try Self.bridge { try service.getDataContextStats() }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("isTrustedIssuerLoadedByName") { [service] (name: String) throws -> Bool in
+      try Self.bridge { try service.isTrustedIssuerLoadedByName(name) }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("isTrustedIssuerLoadedByIssuer") { [service] (issuer: String) throws -> Bool in
+      try Self.bridge { try service.isTrustedIssuerLoadedByIssuer(issuer) }
+    }
+    .runOnQueue(service.queue)
+
+    AsyncFunction("getTrustedIssuerSummary") { [service] () throws -> [String: Any] in
+      try Self.bridge { try service.trustedIssuerSummary() }
+    }
+    .runOnQueue(service.queue)
+
     AsyncFunction("dispose") { [service] in
       try Self.bridge { try service.dispose() }
     }

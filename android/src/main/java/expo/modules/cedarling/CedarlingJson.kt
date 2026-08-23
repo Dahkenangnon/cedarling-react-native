@@ -18,6 +18,15 @@ internal object CedarlingJson {
     return value
   }
 
+  fun requireJsonValue(value: String, label: String): String {
+    parse(value, label)
+    return value
+  }
+
+  fun requireNonemptyString(value: String, label: String): String =
+    value.trim().takeIf(String::isNotEmpty)
+      ?: invalidInput("$label must be a nonempty string")
+
   fun requireEntity(value: String, label: String): String {
     val root = requireObject(value, label)
     val mapping = root.getAsJsonObject("cedar_entity_mapping")
@@ -28,8 +37,7 @@ internal object CedarlingJson {
   }
 
   fun requireAction(value: String): String =
-    value.trim().takeIf(String::isNotEmpty)
-      ?: invalidInput("action must be a nonempty string")
+    requireNonemptyString(value, "action")
 
   fun parseTokens(value: String): List<TokenInput> {
     val root = parse(value, "tokens")

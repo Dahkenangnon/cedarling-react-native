@@ -49,6 +49,28 @@ class CedarlingNativeInstrumentedTest {
     val deny = service.authorizeUnsigned(denyPrincipal, action, resource, "{}")
     assertDecision(deny, expectedAllowed = false, expectedDecision = "DENY")
 
+    val allowRequestId = allow["requestId"] as String
+    val logIds = service.getLogIds()
+    assertTrue("DEBUG memory logging should create records", logIds.isNotEmpty())
+    assertTrue(service.getLogById(logIds.first()).startsWith("{"))
+    assertTrue(service.getLogsByRequestId(allowRequestId).isNotEmpty())
+    assertTrue(service.getLogsByTag("DEBUG").isNotEmpty())
+    service.getLogsByRequestIdAndTag(allowRequestId, "DEBUG")
+
+    service.pushDataContext("demo-session", """{"platform":"android"}""", 60.0)
+    assertEquals("""{"platform":"android"}""", service.getDataContext("demo-session"))
+    assertEquals("demo-session", service.getDataContextEntry("demo-session")?.get("key"))
+    assertTrue(service.listDataContext().isNotEmpty())
+    assertEquals(1.0, service.getDataContextStats()["entryCount"])
+    assertTrue(service.removeDataContext("demo-session"))
+    service.pushDataContext("demo-session", "true", null)
+    service.clearDataContext()
+    assertTrue(service.listDataContext().isEmpty())
+
+    assertFalse(service.isTrustedIssuerLoadedByName("offline-demo"))
+    assertFalse(service.isTrustedIssuerLoadedByIssuer("https://invalid.example"))
+    assertEquals(0.0, service.trustedIssuerSummary()["total"])
+
     assertSdkCode(CedarlingErrorCode.INVALID_JSON) {
       service.authorizeUnsigned(allowPrincipal, action, resource, "{")
     }
@@ -76,6 +98,9 @@ class CedarlingNativeInstrumentedTest {
     for ((result, expectsAllow) in concurrent) {
       assertEquals(expectsAllow, result["allowed"])
     }
+
+    assertTrue(service.popLogs().isNotEmpty())
+    assertTrue(service.getLogIds().isEmpty())
 
     service.dispose()
     assertFalse(service.isInitialized())

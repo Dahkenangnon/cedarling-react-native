@@ -35,6 +35,32 @@ final class CedarlingServiceTests: XCTestCase {
     XCTAssertEqual(deny["allowed"] as? Bool, false)
     XCTAssertEqual(deny["decision"] as? String, "DENY")
 
+    let allowRequestId = try XCTUnwrap(allow["requestId"] as? String)
+    let logIds = try service.getLogIds()
+    XCTAssertFalse(logIds.isEmpty)
+    XCTAssertTrue(try service.getLogById(try XCTUnwrap(logIds.first)).hasPrefix("{"))
+    XCTAssertFalse(try service.getLogsByRequestId(allowRequestId).isEmpty)
+    XCTAssertFalse(try service.getLogsByTag("DEBUG").isEmpty)
+    _ = try service.getLogsByRequestIdAndTag(allowRequestId, tag: "DEBUG")
+
+    try service.pushDataContext(
+      key: "demo-session",
+      valueJson: #"{"platform":"ios"}"#,
+      ttlSeconds: 60
+    )
+    XCTAssertEqual(try service.getDataContext("demo-session"), #"{"platform":"ios"}"#)
+    XCTAssertEqual(try service.getDataContextEntry("demo-session")?["key"] as? String, "demo-session")
+    XCTAssertFalse(try service.listDataContext().isEmpty)
+    XCTAssertEqual(try service.getDataContextStats()["entryCount"] as? Double, 1)
+    XCTAssertTrue(try service.removeDataContext("demo-session"))
+    try service.pushDataContext(key: "demo-session", valueJson: "true", ttlSeconds: nil)
+    try service.clearDataContext()
+    XCTAssertTrue(try service.listDataContext().isEmpty)
+
+    XCTAssertFalse(try service.isTrustedIssuerLoadedByName("offline-demo"))
+    XCTAssertFalse(try service.isTrustedIssuerLoadedByIssuer("https://invalid.example"))
+    XCTAssertEqual(try service.trustedIssuerSummary()["total"] as? Double, 0)
+
     XCTAssertThrowsError(
       try service.initialize(bootstrapJson: fixture.bootstrap, archiveUri: "/missing/policy.cjar")
     )
@@ -93,6 +119,8 @@ final class CedarlingServiceTests: XCTestCase {
     }
     XCTAssertEqual(group.wait(timeout: .now() + 30), .success)
     XCTAssertTrue(failures.isEmpty)
+    XCTAssertFalse(try service.popLogs().isEmpty)
+    XCTAssertTrue(try service.getLogIds().isEmpty)
     try service.dispose()
   }
 

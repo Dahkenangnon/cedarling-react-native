@@ -18,6 +18,22 @@ declare class CedarlingExpoNativeModule extends NativeModule implements Cedarlin
     resourceJson: string,
     contextJson: string
   ): Promise<unknown>;
+  getLogIds(): Promise<unknown>;
+  getLogById(id: string): Promise<unknown>;
+  getLogsByRequestId(requestId: string): Promise<unknown>;
+  getLogsByRequestIdAndTag(requestId: string, tag: string): Promise<unknown>;
+  getLogsByTag(tag: string): Promise<unknown>;
+  popLogs(): Promise<unknown>;
+  pushDataContext(key: string, valueJson: string, ttlSeconds: number | null): Promise<void>;
+  getDataContext(key: string): Promise<unknown>;
+  getDataContextEntry(key: string): Promise<unknown>;
+  removeDataContext(key: string): Promise<boolean>;
+  clearDataContext(): Promise<void>;
+  listDataContext(): Promise<unknown>;
+  getDataContextStats(): Promise<unknown>;
+  isTrustedIssuerLoadedByName(name: string): Promise<boolean>;
+  isTrustedIssuerLoadedByIssuer(issuer: string): Promise<boolean>;
+  getTrustedIssuerSummary(): Promise<unknown>;
   dispose(): Promise<void>;
   getNativeInfo(): Promise<unknown>;
 }

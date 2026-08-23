@@ -17,6 +17,8 @@ internal object CedarlingErrorCode {
   const val ARCHIVE_TOO_LARGE = "E_ARCHIVE_TOO_LARGE"
   const val INITIALIZATION = "E_INITIALIZATION"
   const val AUTHORIZATION = "E_AUTHORIZATION"
+  const val LOGGING = "E_LOGGING"
+  const val DATA_CONTEXT = "E_DATA_CONTEXT"
   const val NATIVE_RESULT_INCONSISTENT = "E_NATIVE_RESULT_INCONSISTENT"
   const val NATIVE = "E_NATIVE"
 }
