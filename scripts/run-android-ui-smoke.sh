@@ -54,6 +54,16 @@ wake_display() {
   sleep 1
 }
 
+configure_test_device() {
+  # Android CTS suppresses error dialogs during UI tests and closes any dialog
+  # that appeared before the setting took effect. Hosted emulators can otherwise
+  # surface System UI or launcher ANRs over a healthy application while software
+  # rendering is under load.
+  adb shell settings put global hide_error_dialogs 1
+  adb shell am broadcast \
+    -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null || true
+}
+
 capture_success_screenshot() {
   local attempt=""
 
@@ -156,18 +166,20 @@ scroll_to_text() {
   return 1
 }
 
+configure_test_device
 cd "$ANDROID_DIR"
-NODE_ENV=test ./gradlew \
+env NODE_ENV=test ./gradlew \
   :cedarling-react-native:connectedDebugAndroidTest \
   -PcedarlingInstrumentationAbi=x86_64 \
   -PreactNativeArchitectures=x86_64 \
   --stacktrace
-NODE_ENV=production ./gradlew :app:assembleRelease --stacktrace
+env NODE_ENV=production ./gradlew :app:assembleRelease --stacktrace
 test -s "$APK"
 
 adb install -r "$APK"
 adb shell am force-stop "$APP_ID"
 adb logcat -c
+configure_test_device
 wake_display
 adb shell am start -W -n "$APP_ID/$ACTIVITY"
 
