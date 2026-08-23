@@ -331,13 +331,13 @@ Run the example development build on either platform and press **Run native smok
 - **Android real native runtime:** API 36 x86_64 AOSP automated-test device on the standard Intel `macos-15-intel` runner, with the real Cedarling instrumentation lifecycle/ALLOW/DENY test.
 - **iOS:** standard arm64 `macos-26`, Xcode 26.4, locked pods, native XCTest, release simulator UI smoke, and unsigned generic-device compile/link.
 
-Logs, test results, release APK/AAB, XCResult bundles, and the unsigned device build are retained briefly as workflow artifacts. Standard private-repository macOS minutes consume the account's included Actions allowance. [GitHub's current hosted-runner pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing) lists standard macOS at USD 0.062 per minute beyond that allowance. This workflow uses standard Intel macOS for the Android emulator and standard arm64 macOS for iOS; it does not select larger runners.
+Logs, test results, release APK/AAB, XCResult bundles, and the unsigned device build are retained briefly as workflow artifacts. Standard GitHub-hosted runners are free for this public repository. If the repository becomes private again, macOS jobs consume the account's included Actions allowance; [GitHub's current hosted-runner pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing) lists standard macOS at USD 0.062 per minute beyond that allowance. This workflow uses standard Intel macOS for the Android emulator and standard arm64 macOS for iOS; it does not select larger runners.
 
 ## Test on a physical iPhone later
 
 The current verification compiles the device slice without signing and runs on an iOS simulator. It is not a physical-iPhone validation.
 
-For direct local testing, a friend with a Mac can clone this private repository, install the locked dependencies, run the iOS prebuild/pod steps above, open `example/ios/CedarlingReactNativeExample.xcworkspace`, select their Apple Development Team and connected iPhone, choose a bundle identifier available to that team if necessary, and run the example from Xcode.
+For direct local testing, a friend with a Mac can clone this repository, install the locked dependencies, run the iOS prebuild/pod steps above, open `example/ios/CedarlingReactNativeExample.xcworkspace`, select their Apple Development Team and connected iPhone, choose a bundle identifier available to that team if necessary, and run the example from Xcode.
 
 For remote distribution, TestFlight is the recommended path. It requires Apple Developer membership, a unique bundle identifier, signing and provisioning, and App Store Connect access. Ad Hoc distribution is possible but requires registering the friend's device UDID. No certificate, private key, provisioning profile, App Store Connect key, or signed CI workflow belongs in this repository until a distribution method and protected release environment are explicitly approved.
 
