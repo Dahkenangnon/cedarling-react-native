@@ -1,6 +1,5 @@
 PODS:
-  - CedarlingReactNative (0.1.0):
-    - ExpoModulesCore
+  - CedarlingReactNative (0.1.0)
   - EXConstants (57.0.13):
     - ExpoModulesCore
   - Expo (57.0.15):
@@ -2165,7 +2164,7 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
-  CedarlingReactNative: 3c41bb3d38506741f73b7a9aaf7a291f4b3ce961
+  CedarlingReactNative: d709125c4c586e26f9112c320550a71c6c022c31
   EXConstants: 1b9bb962f72de86540a5314f4bec2eb3fdeff515
   Expo: 429d926f6dd4edcaab10ff1bac5e5bc63321c700
   ExpoAsset: 2b03d46bfa5827ac7b11e22f812cf99995f2ed4b

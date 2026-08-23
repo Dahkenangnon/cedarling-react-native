@@ -25,6 +25,15 @@ final class CedarlingArchiveTests: XCTestCase {
     assertCode(.invalidInput) {
       _ = try CedarlingArchive.read("file:///tmp/policy.cjar?version=1")
     }
+    assertCode(.invalidInput) {
+      _ = try CedarlingArchive.read("bundle:///../policy-store.cjar")
+    }
+    assertCode(.invalidInput) {
+      _ = try CedarlingArchive.read("bundle://authority/policy-store.cjar")
+    }
+    assertCode(.invalidInput) {
+      _ = try CedarlingArchive.read("bundle:///policy-store.cjar#fragment")
+    }
   }
 
   func testEnforcesArchiveLimitWhileReading() throws {

@@ -9,15 +9,28 @@ import org.junit.Test
 
 class CedarlingArchiveTest {
   @Test
-  fun acceptsFileContentAndAbsolutePaths() {
+  fun acceptsFileContentAssetAndAbsolutePaths() {
     assertTrue(ArchiveLocation.parse("file:///tmp/policy.cjar") is ArchiveLocation.FilePath)
     assertTrue(ArchiveLocation.parse("content://example/policy") is ArchiveLocation.ContentUri)
+    assertEquals(
+      ArchiveLocation.AssetPath("fixtures/policy.cjar"),
+      ArchiveLocation.parse("asset:///fixtures/policy.cjar")
+    )
     assertTrue(ArchiveLocation.parse("/tmp/policy.cjar") is ArchiveLocation.FilePath)
   }
 
   @Test
   fun rejectsRemoteAndRelativeUris() {
-    for (uri in listOf("https://example.test/policy.cjar", "policy.cjar")) {
+    for (
+      uri in listOf(
+        "https://example.test/policy.cjar",
+        "policy.cjar",
+        "asset:///../policy.cjar",
+        "asset://authority/policy.cjar",
+        "asset:///policy.cjar?version=1",
+        "asset:///policy.cjar#fragment"
+      )
+    ) {
       val error = assertThrows(CedarlingSdkException::class.java) {
         ArchiveLocation.parse(uri)
       }

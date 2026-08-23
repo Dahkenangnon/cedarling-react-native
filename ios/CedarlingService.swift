@@ -1,7 +1,7 @@
 import Foundation
 
 internal final class CedarlingService {
-  let queue = DispatchQueue(label: "expo.modules.cedarling.service", qos: .userInitiated)
+  let queue = DispatchQueue(label: "com.cedarling.react-native.service", qos: .userInitiated)
 
   private var instance: Cedarling?
   private var lifecycleDisposed = false

@@ -18,16 +18,17 @@ Pod::Spec.new do |s|
   s.swift_version  = '5.9'
   s.static_framework = true
 
-  s.dependency 'ExpoModulesCore'
-
   s.source_files = [
-    'ios/*.swift',
+    'ios/*.{h,mm,swift}',
     'ios/generated/*.swift'
   ]
+  s.private_header_files = 'ios/*.h'
   s.vendored_frameworks = 'ios/CedarlingNative.xcframework'
   s.frameworks = ['Foundation', 'Security', 'SystemConfiguration']
   s.libraries = ['c++', 'resolv']
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES'
   }
+
+  install_modules_dependencies(s)
 end

@@ -1,108 +1,132 @@
 package expo.modules.cedarling
 
-import expo.modules.kotlin.functions.Coroutine
-import expo.modules.kotlin.modules.Module
-import expo.modules.kotlin.modules.ModuleDefinition
+import com.facebook.react.bridge.Promise
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.module.annotations.ReactModule
+import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
-class CedarlingReactNativeModule : Module() {
-  @Volatile
-  private var service: CedarlingService? = null
+@ReactModule(name = CedarlingReactNativeModule.NAME)
+internal class CedarlingReactNativeModule(reactContext: ReactApplicationContext) :
+  NativeCedarlingReactNativeSpec(reactContext) {
+  private val service = CedarlingService(reactContext)
+  private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+  private val gson = Gson()
 
-  override fun definition() = ModuleDefinition {
-    Name("CedarlingReactNative")
+  override fun initialize(bootstrapJson: String, archiveUri: String?, promise: Promise) =
+    execute(promise) { service.initialize(bootstrapJson, archiveUri) }
 
-    AsyncFunction("initialize") Coroutine {
-        bootstrapJson: String,
-        archiveUri: String? ->
-      requireService().initialize(bootstrapJson, archiveUri)
-    }
+  override fun isInitialized(promise: Promise) =
+    execute(promise) { service.isInitialized() }
 
-    AsyncFunction("isInitialized") Coroutine { ->
-      requireService().isInitialized()
-    }
+  override fun authorizeUnsigned(
+    principalJson: String?,
+    action: String,
+    resourceJson: String,
+    contextJson: String,
+    promise: Promise
+  ) = executeJson(promise) {
+    service.authorizeUnsigned(principalJson, action, resourceJson, contextJson)
+  }
 
-    AsyncFunction("authorizeUnsigned") Coroutine {
-        principalJson: String?,
-        action: String,
-        resourceJson: String,
-        contextJson: String ->
-      requireService().authorizeUnsigned(principalJson, action, resourceJson, contextJson)
-    }
+  override fun authorizeMultiIssuer(
+    tokensJson: String,
+    action: String,
+    resourceJson: String,
+    contextJson: String,
+    promise: Promise
+  ) = executeJson(promise) {
+    service.authorizeMultiIssuer(tokensJson, action, resourceJson, contextJson)
+  }
 
-    AsyncFunction("authorizeMultiIssuer") Coroutine {
-        tokensJson: String,
-        action: String,
-        resourceJson: String,
-        contextJson: String ->
-      requireService().authorizeMultiIssuer(tokensJson, action, resourceJson, contextJson)
-    }
+  override fun getLogIds(promise: Promise) =
+    executeJson(promise) { service.getLogIds() }
 
-    AsyncFunction("getLogIds") Coroutine { -> requireService().getLogIds() }
-    AsyncFunction("getLogById") Coroutine { id: String -> requireService().getLogById(id) }
-    AsyncFunction("getLogsByRequestId") Coroutine { requestId: String ->
-      requireService().getLogsByRequestId(requestId)
-    }
-    AsyncFunction("getLogsByRequestIdAndTag") Coroutine { requestId: String, tag: String ->
-      requireService().getLogsByRequestIdAndTag(requestId, tag)
-    }
-    AsyncFunction("getLogsByTag") Coroutine { tag: String ->
-      requireService().getLogsByTag(tag)
-    }
-    AsyncFunction("popLogs") Coroutine { -> requireService().popLogs() }
+  override fun getLogById(id: String, promise: Promise) =
+    execute(promise) { service.getLogById(id) }
 
-    AsyncFunction("pushDataContext") Coroutine {
-        key: String,
-        valueJson: String,
-        ttlSeconds: Double? ->
-      requireService().pushDataContext(key, valueJson, ttlSeconds)
-    }
-    AsyncFunction("getDataContext") Coroutine { key: String ->
-      requireService().getDataContext(key)
-    }
-    AsyncFunction("getDataContextEntry") Coroutine { key: String ->
-      requireService().getDataContextEntry(key)
-    }
-    AsyncFunction("removeDataContext") Coroutine { key: String ->
-      requireService().removeDataContext(key)
-    }
-    AsyncFunction("clearDataContext") Coroutine { -> requireService().clearDataContext() }
-    AsyncFunction("listDataContext") Coroutine { -> requireService().listDataContext() }
-    AsyncFunction("getDataContextStats") Coroutine { ->
-      requireService().getDataContextStats()
-    }
+  override fun getLogsByRequestId(requestId: String, promise: Promise) =
+    executeJson(promise) { service.getLogsByRequestId(requestId) }
 
-    AsyncFunction("isTrustedIssuerLoadedByName") Coroutine { name: String ->
-      requireService().isTrustedIssuerLoadedByName(name)
-    }
-    AsyncFunction("isTrustedIssuerLoadedByIssuer") Coroutine { issuer: String ->
-      requireService().isTrustedIssuerLoadedByIssuer(issuer)
-    }
-    AsyncFunction("getTrustedIssuerSummary") Coroutine { ->
-      requireService().trustedIssuerSummary()
-    }
+  override fun getLogsByRequestIdAndTag(requestId: String, tag: String, promise: Promise) =
+    executeJson(promise) { service.getLogsByRequestIdAndTag(requestId, tag) }
 
-    AsyncFunction("dispose") Coroutine { ->
-      requireService().dispose()
-    }
+  override fun getLogsByTag(tag: String, promise: Promise) =
+    executeJson(promise) { service.getLogsByTag(tag) }
 
-    AsyncFunction("getNativeInfo") Coroutine { ->
-      requireService().nativeInfo()
-    }
+  override fun popLogs(promise: Promise) =
+    executeJson(promise) { service.popLogs() }
 
-    OnDestroy {
-      service?.disposeFromLifecycle()
-      service = null
+  override fun pushDataContext(
+    key: String,
+    valueJson: String,
+    ttlSeconds: Double?,
+    promise: Promise
+  ) = execute(promise) { service.pushDataContext(key, valueJson, ttlSeconds) }
+
+  override fun getDataContext(key: String, promise: Promise) =
+    execute(promise) { service.getDataContext(key) ?: "null" }
+
+  override fun getDataContextEntry(key: String, promise: Promise) =
+    executeJson(promise) { service.getDataContextEntry(key) }
+
+  override fun removeDataContext(key: String, promise: Promise) =
+    execute(promise) { service.removeDataContext(key) }
+
+  override fun clearDataContext(promise: Promise) =
+    execute(promise) { service.clearDataContext() }
+
+  override fun listDataContext(promise: Promise) =
+    executeJson(promise) { service.listDataContext() }
+
+  override fun getDataContextStats(promise: Promise) =
+    executeJson(promise) { service.getDataContextStats() }
+
+  override fun isTrustedIssuerLoadedByName(name: String, promise: Promise) =
+    execute(promise) { service.isTrustedIssuerLoadedByName(name) }
+
+  override fun isTrustedIssuerLoadedByIssuer(issuer: String, promise: Promise) =
+    execute(promise) { service.isTrustedIssuerLoadedByIssuer(issuer) }
+
+  override fun getTrustedIssuerSummary(promise: Promise) =
+    executeJson(promise) { service.trustedIssuerSummary() }
+
+  override fun dispose(promise: Promise) =
+    execute(promise) { service.dispose() }
+
+  override fun getNativeInfo(promise: Promise) =
+    executeJson(promise) { service.nativeInfo() }
+
+  override fun invalidate() {
+    service.disposeFromLifecycle()
+    scope.cancel()
+    super.invalidate()
+  }
+
+  private fun executeJson(promise: Promise, operation: suspend () -> Any?) =
+    execute(promise) { gson.toJson(operation()) }
+
+  private fun execute(promise: Promise, operation: suspend () -> Any?) {
+    scope.launch {
+      try {
+        promise.resolve(operation())
+      } catch (error: CedarlingSdkException) {
+        promise.reject(error.code, error.message, error)
+      } catch (error: Throwable) {
+        promise.reject(
+          CedarlingErrorCode.NATIVE,
+          "Cedarling native operation failed",
+          error
+        )
+      }
     }
   }
 
-  private fun requireService(): CedarlingService {
-    service?.let { return it }
-    return synchronized(this) {
-      service ?: CedarlingService(
-        requireNotNull(appContext.reactContext) {
-          "React application context is unavailable"
-        }.applicationContext
-      ).also { service = it }
-    }
+  companion object {
+    const val NAME = NativeCedarlingReactNativeSpec.NAME
   }
 }
