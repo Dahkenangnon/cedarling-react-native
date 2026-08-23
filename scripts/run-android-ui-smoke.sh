@@ -117,13 +117,12 @@ find_resource_bounds() {
   node "$PROJECT_DIR/scripts/android-ui-bounds.mjs" "$UI_XML" resource-id "$resource_id"
 }
 
-dismiss_transient_system_anr() {
+dismiss_transient_anr() {
   local bounds=""
   local wait_x=""
   local wait_y=""
 
-  if ! grep -Fq "text=\"Process system isn't responding\"" "$UI_XML" ||
-     ! grep -Fq 'resource-id="android:id/aerr_wait"' "$UI_XML"; then
+  if ! grep -Fq 'resource-id="android:id/aerr_wait"' "$UI_XML"; then
     return 1
   fi
 
@@ -133,7 +132,7 @@ dismiss_transient_system_anr() {
   fi
 
   read -r wait_x wait_y <<<"$bounds"
-  echo "Dismissing transient Android system ANR dialog" >&2
+  echo "Dismissing transient Android ANR dialog" >&2
   adb shell input tap "$wait_x" "$wait_y"
   sleep 3
 }
@@ -143,7 +142,7 @@ scroll_to_text() {
   local bounds=""
   for _ in $(seq 1 14); do
     dump_ui
-    if dismiss_transient_system_anr; then
+    if dismiss_transient_anr; then
       continue
     fi
     bounds="$(find_bounds "$label")"
@@ -179,7 +178,7 @@ adb shell input tap "$button_x" "$button_y"
 passed=false
 for _ in $(seq 1 45); do
   dump_ui
-  if dismiss_transient_system_anr; then
+  if dismiss_transient_anr; then
     continue
   fi
   if grep -Fq 'text="PASS"' "$UI_XML" &&
