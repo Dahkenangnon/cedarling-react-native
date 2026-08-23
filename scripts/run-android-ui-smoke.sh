@@ -7,12 +7,10 @@ ARTIFACT_ROOT="${RUNNER_TEMP:-/tmp}/cedarling-android-${EXAMPLE_KIND}"
 UI_XML="$ARTIFACT_ROOT/window.xml"
 SUCCESS_SCREENSHOT="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-success.png"
 FAILURE_SCREENSHOT="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-failure.png"
-VIDEO_DEVICE="/sdcard/cedarling-${EXAMPLE_KIND}.mp4"
 VIDEO_LOCAL="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}.mp4"
-VIDEO_LOG="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-screenrecord.txt"
+VIDEO_LOG="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-video-render.txt"
+VIDEO_FRAMES="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-video-frames"
 LOGCAT="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-logcat.txt"
-SCREENRECORD_HOST_PID=""
-SCREENRECORD_ACTIVE=false
 
 case "$EXAMPLE_KIND" in
   expo)
@@ -36,28 +34,42 @@ esac
 mkdir -p "$ARTIFACT_ROOT"
 rm -f "$VIDEO_LOCAL" "$VIDEO_LOG"
 
-stop_video_recording() {
-  if [[ "$SCREENRECORD_ACTIVE" != true ]]; then
-    return
-  fi
-
-  adb shell pkill -INT screenrecord >/dev/null 2>&1 || true
-  if [[ -n "$SCREENRECORD_HOST_PID" ]]; then
-    wait "$SCREENRECORD_HOST_PID" || true
-  fi
-  adb shell sync >/dev/null 2>&1 || true
-  adb pull "$VIDEO_DEVICE" "$VIDEO_LOCAL" >/dev/null 2>&1 || true
-  SCREENRECORD_ACTIVE=false
-}
-
 capture_diagnostics() {
   adb logcat -d > "$LOGCAT" || true
   if [[ ! -s "$SUCCESS_SCREENSHOT" ]]; then
     adb exec-out screencap -p > "$FAILURE_SCREENSHOT" || true
   fi
-  stop_video_recording
 }
 trap capture_diagnostics EXIT
+
+render_evidence_video() {
+  local frame_index=""
+  local frame_path=""
+
+  command -v ffmpeg >/dev/null
+  mkdir -p "$VIDEO_FRAMES"
+
+  for frame_index in $(seq 1 16); do
+    printf -v frame_path '%s/frame-%03d.png' "$VIDEO_FRAMES" "$frame_index"
+    adb exec-out screencap -p > "$frame_path"
+    test -s "$frame_path"
+    sleep 0.25
+  done
+
+  ffmpeg \
+    -hide_banner \
+    -loglevel info \
+    -y \
+    -framerate 4 \
+    -i "$VIDEO_FRAMES/frame-%03d.png" \
+    -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' \
+    -c:v libx264 \
+    -preset veryfast \
+    -pix_fmt yuv420p \
+    -movflags +faststart \
+    "$VIDEO_LOCAL" > "$VIDEO_LOG" 2>&1
+  test -s "$VIDEO_LOCAL"
+}
 
 dump_ui() {
   adb shell uiautomator dump /sdcard/cedarling-window.xml >/dev/null
@@ -126,10 +138,6 @@ test -s "$APK"
 adb install -r "$APK"
 adb shell am force-stop "$APP_ID"
 adb logcat -c
-adb shell rm -f "$VIDEO_DEVICE"
-adb shell screenrecord --size 720x1280 --bit-rate 3000000 --time-limit 120 "$VIDEO_DEVICE" >"$VIDEO_LOG" 2>&1 &
-SCREENRECORD_HOST_PID="$!"
-SCREENRECORD_ACTIVE=true
 adb shell am start -W -n "$APP_ID/$ACTIVITY"
 
 button_bounds="$(scroll_to_text "Run native smoke tests")"
@@ -161,7 +169,6 @@ adb exec-out screencap -p > "$SUCCESS_SCREENSHOT"
 test -s "$SUCCESS_SCREENSHOT"
 grep -Fq 'text="PASS"' "$UI_XML"
 grep -Fq 'text="ALLOW request: ALLOW · DENY request: DENY"' "$UI_XML"
-stop_video_recording
-test -s "$VIDEO_LOCAL"
+render_evidence_video
 
 echo "Android $EXAMPLE_KIND JavaScript-to-Rust smoke test passed"

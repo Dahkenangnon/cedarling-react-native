@@ -245,8 +245,8 @@ For each Expo and bare Android application, CI:
 - verifies all four ABIs, RELRO, 16 KiB alignment, JNA, and bundle page-alignment metadata;
 - runs the release app on an API 36 x86_64 emulator;
 - executes the real JavaScript-to-Rust ALLOW/DENY UI path;
-- requires a downloadable PASS PNG;
-- retains a failure PNG, logcat, test reports, UI hierarchy, and available MP4.
+- requires a downloadable PASS PNG and a short MP4 rendered from real emulator screen frames after PASS;
+- retains a failure PNG, logcat, test reports, and the UI hierarchy.
 
 For each Expo and bare iOS application, CI:
 
