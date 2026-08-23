@@ -42,6 +42,7 @@ export default function App() {
   const [allowResult, setAllowResult] = useState<CedarlingAuthorizeResult | null>(null);
   const [denyResult, setDenyResult] = useState<CedarlingAuthorizeResult | null>(null);
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
+  const [completedRuns, setCompletedRuns] = useState(0);
 
   const runSmokeTests = useCallback(async () => {
     const startedAt = performance.now();
@@ -89,6 +90,7 @@ export default function App() {
         throw new CedarlingError('E_NATIVE_RESULT_INCONSISTENT', 'Expected real DENY decision');
       }
 
+      setCompletedRuns((count) => count + 1);
       setStatus('pass');
     } catch (caught) {
       const message =
@@ -119,20 +121,16 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.eyebrow}>ANDROID NATIVE EXPERIMENT</Text>
+        <Text style={styles.eyebrow}>NATIVE AUTHORIZATION EXPERIMENT</Text>
         <Text style={styles.header}>Cedarling on React Native</Text>
         <Text style={styles.intro}>
-          Real Cedar authorization through Expo Modules, Kotlin, UniFFI, and the embedded Rust
-          core.
+          Real Cedar authorization through Expo Modules, platform-native UniFFI bindings, and the
+          embedded Rust core.
         </Text>
 
         <View style={styles.summary}>
           <Metric label="Platform" value={Platform.OS} testID="platform" />
-          <Metric
-            label="SDK"
-            value={nativeInfo?.sdkVersion ?? 'Not loaded'}
-            testID="sdk-version"
-          />
+          <Metric label="SDK" value={nativeInfo?.sdkVersion ?? 'Not loaded'} testID="sdk-version" />
           <Metric
             label="Revision"
             value={nativeInfo?.cedarlingRevision.slice(0, 12) ?? 'Not loaded'}
@@ -143,6 +141,7 @@ export default function App() {
             value={elapsedMs == null ? 'Not run' : elapsedMs.toFixed(1) + ' ms'}
             testID="execution-time"
           />
+          <Metric label="Completed runs" value={String(completedRuns)} testID="completed-runs" />
         </View>
 
         <StatusRow
@@ -195,7 +194,7 @@ export default function App() {
 
         <View style={styles.overall} testID="overall-status">
           {status === 'running' ? <ActivityIndicator color="#22c55e" /> : null}
-          <Text style={styles.overallText}>
+          <Text style={styles.overallText} testID="overall-status-value">
             {status === 'idle'
               ? 'READY'
               : status === 'running'
@@ -208,8 +207,8 @@ export default function App() {
 
         <Text style={styles.note}>
           This app requires an Expo development build and does not run in Expo Go. Mobile
-          authorization is defense in depth; backend services must independently authorize
-          protected operations.
+          authorization is defense in depth; backend services must independently authorize protected
+          operations.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -220,7 +219,7 @@ function Metric({ label, value, testID }: { label: string; value: string; testID
   return (
     <View style={styles.metric} testID={testID}>
       <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={styles.metricValue} numberOfLines={1}>
+      <Text style={styles.metricValue} numberOfLines={1} testID={testID + '-value'}>
         {value}
       </Text>
     </View>
@@ -268,7 +267,7 @@ function DecisionCard({
           <Text style={styles.decisionLabel}>{label}</Text>
           <Text style={styles.expected}>Expected {expected}</Text>
         </View>
-        <Text style={[styles.badge, passed && styles.badgePass]}>
+        <Text style={[styles.badge, passed && styles.badgePass]} testID={testID + '-decision'}>
           {result ? result.decision : 'PENDING'}
         </Text>
       </View>
@@ -311,8 +310,7 @@ function ActionButton({
         secondary && styles.buttonSecondary,
         disabled && styles.buttonDisabled,
       ]}
-      testID={testID}
-    >
+      testID={testID}>
       <Text style={[styles.buttonText, secondary && styles.buttonTextSecondary]}>{label}</Text>
     </Pressable>
   );

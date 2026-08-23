@@ -1,5 +1,9 @@
 {
-  "platforms": ["android"],
+  "platforms": ["android", "ios"],
+  "ios": {
+    "modules": ["CedarlingReactNativeModule"],
+    "podspecPath": "CedarlingReactNative.podspec"
+  },
   "android": {
     "modules": ["expo.modules.cedarling.CedarlingReactNativeModule"]
   }

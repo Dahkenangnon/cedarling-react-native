@@ -9,7 +9,7 @@
 - Source: https://github.com/JanssenProject/jans/tree/f7c6e34be6ac8d585a9d7b6f7a12921b440b495b/jans-cedarling
 - License: Apache License 2.0
 
-The generated Kotlin binding and each `libcedarling_uniffi.so` are built from the exact commit above. Cedarling and its statically linked Rust dependency graph remain subject to their respective licenses; authoritative package versions are captured by the pinned Jans `Cargo.lock`.
+The generated Kotlin and Swift bindings, each Android `libcedarling_uniffi.so`, and both static libraries in `CedarlingNative.xcframework` are built from the exact commit above. Cedarling and its statically linked Rust dependency graph remain subject to their respective licenses; authoritative package versions are captured by the pinned Jans `Cargo.lock`.
 
 ## UniFFI
 
@@ -18,7 +18,7 @@ The generated Kotlin binding and each `libcedarling_uniffi.so` are built from th
 - Source: https://github.com/mozilla/uniffi-rs/tree/v0.29.5
 - License: Mozilla Public License 2.0
 
-UniFFI generated the Kotlin foreign-function binding bundled by this package. Generated source retains its upstream notice.
+UniFFI generated the Kotlin and Swift foreign-function bindings and the C header/module-map interface bundled by this package. Generated source retains its upstream notice.
 
 ## Java Native Access
 
@@ -40,7 +40,7 @@ The original Android AAR and POM are retained in `android/maven` for provenance.
 
 ## Cedar policy engine and native transitive dependencies
 
-`libcedarling_uniffi.so` statically incorporates Cedar policy engine and other Rust crates selected by the pinned Jans lockfile, including cryptographic and TLS components. Their source code, copyright notices, and license expressions are available through the exact dependency graph produced by:
+The Android shared libraries and iOS static archives incorporate the Cedar policy engine and other Rust crates selected by the pinned Jans lockfile, including cryptographic and TLS components. Their source code, copyright notices, and license expressions are available through the exact dependency graph produced by:
 
 ```sh
 cargo metadata --locked --format-version 1 \

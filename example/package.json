@@ -16,10 +16,13 @@
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
-    "prebuild": "expo prebuild --platform android",
+    "ios": "expo run:ios",
+    "prebuild": "expo prebuild",
+    "typecheck": "tsc --noEmit",
     "test:android": "cd android && ./gradlew testDebugUnitTest",
     "test:android:instrumented": "cd android && ./gradlew connectedDebugAndroidTest",
-    "build:release": "cd android && ./gradlew assembleRelease bundleRelease"
+    "build:release": "cd android && ./gradlew assembleRelease bundleRelease",
+    "build:ios": "xcodebuild -workspace ios/CedarlingReactNativeExample.xcworkspace -scheme CedarlingReactNativeExample -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO build"
   },
   "private": true,
   "expo": {

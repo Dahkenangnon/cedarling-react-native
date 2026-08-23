@@ -142,6 +142,17 @@ describe('Cedarling TypeScript boundary', () => {
     ).toThrow(expect.objectContaining({ code: 'E_NATIVE_RESULT_INCONSISTENT' }));
   });
 
+  test('fails closed when the native request ID is blank', () => {
+    expect(() =>
+      mapAuthorizeResult({
+        allowed: false,
+        decision: 'DENY',
+        requestId: '   ',
+        diagnostics: { reasons: [], errors: [] },
+      })
+    ).toThrow(expect.objectContaining({ code: 'E_NATIVE_RESULT_INCONSISTENT' }));
+  });
+
   test.each([
     {
       label: 'empty action',
@@ -238,7 +249,7 @@ describe('Cedarling TypeScript boundary', () => {
     await expect(api.isInitialized()).rejects.toEqual(
       new CedarlingError(
         'E_UNSUPPORTED_PLATFORM',
-        'cedarling-react-native supports Android only; received Web'
+        'cedarling-react-native supports Android and iOS; received Web'
       )
     );
   });

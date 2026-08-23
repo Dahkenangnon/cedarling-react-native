@@ -27,13 +27,15 @@ fi
 
 mkdir -p "$TEMP_DIR/policy-store" "$ANDROID_TEST_ASSETS"
 cp -R "$SOURCE_DIR/." "$TEMP_DIR/policy-store/"
-find "$TEMP_DIR/policy-store" -type f -exec touch -t 202608220000.00 {} +
+find "$TEMP_DIR/policy-store" -type f -exec chmod 0644 {} +
+TZ=UTC find "$TEMP_DIR/policy-store" -type f -exec touch -t 202608220000.00 {} +
 
 (
   cd "$TEMP_DIR/policy-store"
+  export TZ=UTC
   find . -type f -print0 |
     LC_ALL=C sort -z |
-    xargs -0 zip -X -q "$OUTPUT_FILE"
+    xargs -0 zip -0 -X -q "$OUTPUT_FILE"
 )
 
 cp "$OUTPUT_FILE" "$ANDROID_TEST_ASSETS/policy-store.cjar"
