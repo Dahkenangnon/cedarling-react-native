@@ -232,6 +232,20 @@ jobs:
             android/build.gradle
             ${{ matrix.app_dir }}/android/**/*.gradle*
 
+      - name: Install pinned Android native build toolchain
+        run: |
+          android_sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:?Android SDK path is unavailable}}"
+          sdkmanager="$android_sdk_root/cmdline-tools/latest/bin/sdkmanager"
+          for attempt in 1 2 3; do
+            if "$sdkmanager" --install "cmake;3.22.1" "ndk;27.1.12297006"; then
+              exit 0
+            fi
+            if [[ "$attempt" -eq 3 ]]; then
+              exit 1
+            fi
+            sleep "$((attempt * 10))"
+          done
+
       - name: Install Android evidence video encoder
         run: |
           HOMEBREW_NO_AUTO_UPDATE=1 brew install ffmpeg
