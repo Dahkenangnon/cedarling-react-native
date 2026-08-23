@@ -1,5 +1,26 @@
 PODS:
-  - CedarlingReactNative (0.1.0)
+  - CedarlingReactNative (0.1.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - EXConstants (57.0.13):
     - ExpoModulesCore
   - Expo (57.0.15):
@@ -2164,7 +2185,7 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
-  CedarlingReactNative: d709125c4c586e26f9112c320550a71c6c022c31
+  CedarlingReactNative: b907702666ff507536adefa5448ace15902cea52
   EXConstants: 1b9bb962f72de86540a5314f4bec2eb3fdeff515
   Expo: 429d926f6dd4edcaab10ff1bac5e5bc63321c700
   ExpoAsset: 2b03d46bfa5827ac7b11e22f812cf99995f2ed4b

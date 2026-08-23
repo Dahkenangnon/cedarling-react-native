@@ -129,7 +129,10 @@ public final class CedarlingReactNativeBridge: NSObject {
     key: String,
     completion: @escaping CedarlingBridgeCompletion
   ) {
-    performJson(completion) { try self.service.getDataContextEntry(key) ?? NSNull() }
+    performJson(completion) {
+      let entry: Any = try self.service.getDataContextEntry(key) ?? NSNull()
+      return entry
+    }
   }
 
   @objc(removeDataContextWithKey:completion:)

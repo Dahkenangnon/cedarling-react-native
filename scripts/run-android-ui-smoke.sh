@@ -55,7 +55,7 @@ const fs = require('node:fs');
 const xml = fs.readFileSync(process.env.UI_XML_PATH, 'utf8');
 const escaped = process.env.UI_LABEL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const element = xml.match(new RegExp('<node\\b(?=[^>]*\\btext="' + escaped + '")[^>]*>'));
-const bounds = element?.[0].match(/bounds="\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]"/);
+const bounds = element?.[0].match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/);
 if (bounds) {
   const x = Math.round((Number(bounds[1]) + Number(bounds[3])) / 2);
   const y = Math.round((Number(bounds[2]) + Number(bounds[4])) / 2);
