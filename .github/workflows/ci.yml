@@ -245,9 +245,11 @@ jobs:
           emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-metrics
           script: bash scripts/run-android-ui-smoke.sh ${{ matrix.kind }}
 
-      - name: Require the downloadable PASS screenshot
+      - name: Require the downloadable PASS screenshot and video
         if: ${{ always() }}
-        run: test -s "$RUNNER_TEMP/cedarling-android-${{ matrix.kind }}/android-${{ matrix.kind }}-success.png"
+        run: |
+          test -s "$RUNNER_TEMP/cedarling-android-${{ matrix.kind }}/android-${{ matrix.kind }}-success.png"
+          test -s "$RUNNER_TEMP/cedarling-android-${{ matrix.kind }}/android-${{ matrix.kind }}.mp4"
 
       - name: Upload Android screenshots, video, logs, and reports
         if: ${{ always() }}

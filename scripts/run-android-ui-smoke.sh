@@ -9,7 +9,10 @@ SUCCESS_SCREENSHOT="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-success.png"
 FAILURE_SCREENSHOT="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-failure.png"
 VIDEO_DEVICE="/sdcard/cedarling-${EXAMPLE_KIND}.mp4"
 VIDEO_LOCAL="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}.mp4"
+VIDEO_LOG="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-screenrecord.txt"
 LOGCAT="$ARTIFACT_ROOT/android-${EXAMPLE_KIND}-logcat.txt"
+SCREENRECORD_HOST_PID=""
+SCREENRECORD_ACTIVE=false
 
 case "$EXAMPLE_KIND" in
   expo)
@@ -31,15 +34,28 @@ case "$EXAMPLE_KIND" in
 esac
 
 mkdir -p "$ARTIFACT_ROOT"
+rm -f "$VIDEO_LOCAL" "$VIDEO_LOG"
+
+stop_video_recording() {
+  if [[ "$SCREENRECORD_ACTIVE" != true ]]; then
+    return
+  fi
+
+  adb shell pkill -INT screenrecord >/dev/null 2>&1 || true
+  if [[ -n "$SCREENRECORD_HOST_PID" ]]; then
+    wait "$SCREENRECORD_HOST_PID" || true
+  fi
+  adb shell sync >/dev/null 2>&1 || true
+  adb pull "$VIDEO_DEVICE" "$VIDEO_LOCAL" >/dev/null 2>&1 || true
+  SCREENRECORD_ACTIVE=false
+}
 
 capture_diagnostics() {
   adb logcat -d > "$LOGCAT" || true
   if [[ ! -s "$SUCCESS_SCREENSHOT" ]]; then
     adb exec-out screencap -p > "$FAILURE_SCREENSHOT" || true
   fi
-  adb shell pkill -INT screenrecord >/dev/null 2>&1 || true
-  sleep 1
-  adb pull "$VIDEO_DEVICE" "$VIDEO_LOCAL" >/dev/null 2>&1 || true
+  stop_video_recording
 }
 trap capture_diagnostics EXIT
 
@@ -111,7 +127,9 @@ adb install -r "$APK"
 adb shell am force-stop "$APP_ID"
 adb logcat -c
 adb shell rm -f "$VIDEO_DEVICE"
-adb shell screenrecord --size 720x1280 --bit-rate 3000000 --time-limit 120 "$VIDEO_DEVICE" >/dev/null 2>&1 &
+adb shell screenrecord --size 720x1280 --bit-rate 3000000 --time-limit 120 "$VIDEO_DEVICE" >"$VIDEO_LOG" 2>&1 &
+SCREENRECORD_HOST_PID="$!"
+SCREENRECORD_ACTIVE=true
 adb shell am start -W -n "$APP_ID/$ACTIVITY"
 
 button_bounds="$(scroll_to_text "Run native smoke tests")"
@@ -143,5 +161,7 @@ adb exec-out screencap -p > "$SUCCESS_SCREENSHOT"
 test -s "$SUCCESS_SCREENSHOT"
 grep -Fq 'text="PASS"' "$UI_XML"
 grep -Fq 'text="ALLOW request: ALLOW · DENY request: DENY"' "$UI_XML"
+stop_video_recording
+test -s "$VIDEO_LOCAL"
 
 echo "Android $EXAMPLE_KIND JavaScript-to-Rust smoke test passed"
