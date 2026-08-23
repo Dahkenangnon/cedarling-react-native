@@ -237,7 +237,7 @@ jobs:
         with:
           api-level: 36
           arch: x86_64
-          target: aosp_atd
+          target: google_apis
           profile: pixel_2
           disk-size: 4096M
           emulator-boot-timeout: 900
@@ -362,11 +362,25 @@ jobs:
           success_png="$RUNNER_TEMP/ios-${{ matrix.kind }}-success.png"
           failure_png="$RUNNER_TEMP/ios-${{ matrix.kind }}-failure.png"
           video="$RUNNER_TEMP/ios-${{ matrix.kind }}.mp4"
+          first_attempt_video="$RUNNER_TEMP/ios-${{ matrix.kind }}-attempt-1.mp4"
+          ui_log="$RUNNER_TEMP/ios-${{ matrix.kind }}-ui-tests.log"
+          ui_result="$RUNNER_TEMP/${{ matrix.app_name }}UITests.xcresult"
+          ui_retry_result="$RUNNER_TEMP/${{ matrix.app_name }}UITestsRetry.xcresult"
+          video_pid=""
+          start_video() {
+            xcrun simctl io "$IOS_SIMULATOR_UDID" recordVideo --codec=h264 "$video" &
+            video_pid=$!
+          }
           cleanup() {
             if [[ -n "${video_pid:-}" ]]; then
               kill -INT "$video_pid" >/dev/null 2>&1 || true
               wait "$video_pid" >/dev/null 2>&1 || true
+              video_pid=""
             fi
+          }
+          run_ui_tests() {
+            local result_bundle="$1"
+            xcodebuild test -workspace ${{ matrix.app_dir }}/ios/${{ matrix.app_name }}.xcworkspace -scheme ${{ matrix.app_name }}-UITests -configuration Release -destination "platform=iOS Simulator,id=$IOS_SIMULATOR_UDID" -derivedDataPath "$RUNNER_TEMP/${{ matrix.app_name }}DerivedData" -resultBundlePath "$result_bundle" -only-testing:${{ matrix.app_name }}UITests ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO | tee -a "$ui_log"
           }
           failure() {
             xcrun simctl io "$IOS_SIMULATOR_UDID" screenshot "$failure_png" || true
@@ -375,13 +389,28 @@ jobs:
           trap failure ERR
           xcrun simctl boot "$IOS_SIMULATOR_UDID" 2>/dev/null || true
           open -a Simulator --args -CurrentDeviceUDID "$IOS_SIMULATOR_UDID"
-          xcrun simctl io "$IOS_SIMULATOR_UDID" recordVideo --codec=h264 "$video" &
-          video_pid=$!
-          xcodebuild test -workspace ${{ matrix.app_dir }}/ios/${{ matrix.app_name }}.xcworkspace -scheme ${{ matrix.app_name }}-UITests -configuration Release -destination "platform=iOS Simulator,id=$IOS_SIMULATOR_UDID" -derivedDataPath "$RUNNER_TEMP/${{ matrix.app_name }}DerivedData" -resultBundlePath "$RUNNER_TEMP/${{ matrix.app_name }}UITests.xcresult" -only-testing:${{ matrix.app_name }}UITests ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO | tee "$RUNNER_TEMP/ios-${{ matrix.kind }}-ui-tests.log"
+          : > "$ui_log"
+          start_video
+          if ! run_ui_tests "$ui_result"; then
+            cleanup
+            if ! grep -Fq 'Timed out while acquiring background assertion' "$ui_log"; then
+              failure
+              trap - ERR
+              exit 1
+            fi
+            echo "Retrying iOS UI smoke after simulator background-assertion timeout" | tee -a "$ui_log"
+            mv "$video" "$first_attempt_video" || true
+            xcrun simctl shutdown "$IOS_SIMULATOR_UDID" 2>/dev/null || true
+            xcrun simctl boot "$IOS_SIMULATOR_UDID"
+            xcrun simctl bootstatus "$IOS_SIMULATOR_UDID" -b
+            open -a Simulator --args -CurrentDeviceUDID "$IOS_SIMULATOR_UDID"
+            start_video
+            run_ui_tests "$ui_retry_result"
+          fi
           cleanup
-          video_pid=""
           xcrun simctl io "$IOS_SIMULATOR_UDID" screenshot "$success_png"
           test -s "$success_png"
+          test -s "$video"
           trap - ERR
 
       - name: Compile and link the device slice without signing
@@ -397,9 +426,11 @@ jobs:
             exit 1
           fi
 
-      - name: Require the downloadable PASS screenshot
+      - name: Require the downloadable PASS screenshot and video
         if: ${{ always() }}
-        run: test -s "$RUNNER_TEMP/ios-${{ matrix.kind }}-success.png"
+        run: |
+          test -s "$RUNNER_TEMP/ios-${{ matrix.kind }}-success.png"
+          test -s "$RUNNER_TEMP/ios-${{ matrix.kind }}.mp4"
 
       - name: Upload iOS screenshots, video, XCResult, logs, and Pod lock
         if: ${{ always() }}
@@ -410,8 +441,9 @@ jobs:
             ${{ runner.temp }}/ios-${{ matrix.kind }}-success.png
             ${{ runner.temp }}/ios-${{ matrix.kind }}-failure.png
             ${{ runner.temp }}/ios-${{ matrix.kind }}.mp4
+            ${{ runner.temp }}/ios-${{ matrix.kind }}-attempt-1.mp4
             ${{ runner.temp }}/${{ matrix.app_name }}NativeTests.xcresult
-            ${{ runner.temp }}/${{ matrix.app_name }}UITests.xcresult
+            ${{ runner.temp }}/${{ matrix.app_name }}UITests*.xcresult
             ${{ runner.temp }}/ios-${{ matrix.kind }}-native-tests.log
             ${{ runner.temp }}/ios-${{ matrix.kind }}-ui-tests.log
             ${{ runner.temp }}/ios-${{ matrix.kind }}-device-build.log
