@@ -328,10 +328,10 @@ Run the example development build on either platform and press **Run native smok
 
 - **JavaScript and package:** locked installs, high-severity audits, lint, root/example typechecks, Jest, build, deterministic fixture, synchronized native pins, native hashes, and both npm payloads.
 - **Android JVM, lint, and release:** clean Expo prebuild, Kotlin/JVM tests, Android lint, minified APK/AAB builds, checksums, ABIs, RELRO, 16 KiB ELF alignment, APK zip alignment, and the SHA-verified Bundletool AAB configuration.
-- **Android real native runtime:** API 36 x86_64 emulator and the real Cedarling instrumentation lifecycle/ALLOW/DENY test.
+- **Android real native runtime:** API 36 x86_64 AOSP automated-test device on the standard Intel `macos-15-intel` runner, with the real Cedarling instrumentation lifecycle/ALLOW/DENY test.
 - **iOS:** standard arm64 `macos-26`, Xcode 26.4, locked pods, native XCTest, release simulator UI smoke, and unsigned generic-device compile/link.
 
-Logs, test results, release APK/AAB, XCResult bundles, and the unsigned device build are retained briefly as workflow artifacts. Standard private-repository macOS minutes consume the account's included Actions allowance. [GitHub's current hosted-runner pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing) lists standard macOS at USD 0.062 per minute beyond that allowance; this workflow uses the standard arm64 image and does not select a larger runner.
+Logs, test results, release APK/AAB, XCResult bundles, and the unsigned device build are retained briefly as workflow artifacts. Standard private-repository macOS minutes consume the account's included Actions allowance. [GitHub's current hosted-runner pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing) lists standard macOS at USD 0.062 per minute beyond that allowance. This workflow uses standard Intel macOS for the Android emulator and standard arm64 macOS for iOS; it does not select larger runners.
 
 ## Test on a physical iPhone later
 
