@@ -20,9 +20,9 @@ env:
 
 jobs:
   package:
-    name: JavaScript and package
+    name: JavaScript, Codegen, and package
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -37,48 +37,68 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             example/package-lock.json
+            bare-example/package-lock.json
 
       - name: Install locked dependencies
         run: |
           npm ci
           npm --prefix example ci
+          npm --prefix bare-example ci
 
       - name: Audit dependencies
         run: |
           npm audit --audit-level=high
           npm --prefix example audit --audit-level=high
+          npm --prefix bare-example audit --audit-level=high
 
-      - name: Lint, typecheck, test, and build
+      - name: Lint, typecheck, test, build, and Codegen
         run: |
           npm run lint
           npm run typecheck
-          npm test -- --runInBand
+          npm test
           npm run build
+          npm run codegen
           npm --prefix example run typecheck
+          npm --prefix bare-example run typecheck
+
+      - name: Verify both application configurations
+        run: |
+          npm run verify:autolinking
           cd example
           npx expo config --type public >/dev/null
 
       - name: Verify deterministic fixture
         run: |
           npm run build:policy-fixture
-          git diff --exit-code -- \
-            example/assets/policy-store.cjar \
-            android/src/androidTest/assets
+          git diff --exit-code -- example/assets/policy-store.cjar android/src/androidTest/assets
 
-      - name: Verify native pins and source artifacts
+      - name: Verify native pins, checksums, and package payload
         run: |
-          npm run verify:autolinking
           npm run verify:native-pins
           npm run verify:android-artifacts -- --native-only
           npm run verify:ios-artifacts -- --native-only
+          npm run verify:package
 
-      - name: Verify Android and iOS npm payloads
-        run: npm run verify:package
+      - name: Reject generated or machine-local package state
+        run: |
+          git diff --check
+          if git ls-files | grep -E '(^|/)(\.env($|\.)|.*\.(p12|mobileprovision|jks|keystore)$)'; then
+            echo "Tracked secret-like file detected" >&2
+            exit 1
+          fi
 
   android-build:
-    name: Android JVM, lint, and release
+    name: Android ${{ matrix.kind }} JVM, lint, and release
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - kind: expo
+            app_dir: example
+          - kind: bare
+            app_dir: bare-example
     steps:
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -92,14 +112,16 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            example/package-lock.json
+            ${{ matrix.app_dir }}/package-lock.json
 
       - name: Install locked dependencies
         run: |
           npm ci
-          npm --prefix example ci
+          npm --prefix ${{ matrix.app_dir }} ci
+          npm run build
 
-      - name: Generate a clean Android project
+      - name: Generate a clean Expo Android project
+        if: ${{ matrix.kind == 'expo' }}
         working-directory: example
         run: npx expo prebuild --clean --platform android --no-install
 
@@ -111,16 +133,17 @@ jobs:
           cache: gradle
           cache-dependency-path: |
             android/build.gradle
-            example/android/**/*.gradle*
+            ${{ matrix.app_dir }}/android/**/*.gradle*
 
       - name: Run module JVM tests and Android lint
-        working-directory: example/android
+        working-directory: ${{ matrix.app_dir }}/android
         env:
           NODE_ENV: test
-        run: ./gradlew :cedarling-react-native:testDebugUnitTest :cedarling-react-native:lintDebug --stacktrace
+        run: |
+          ./gradlew :cedarling-react-native:generateCodegenArtifactsFromSchema :cedarling-react-native:testDebugUnitTest :cedarling-react-native:lintDebug --stacktrace
 
       - name: Build release APK and AAB
-        working-directory: example/android
+        working-directory: ${{ matrix.app_dir }}/android
         env:
           NODE_ENV: production
         run: ./gradlew :app:assembleRelease :app:bundleRelease --stacktrace
@@ -128,42 +151,50 @@ jobs:
       - name: Install verified Bundletool
         run: |
           mkdir -p "$RUNNER_TEMP/bundletool"
-          curl --fail --location --silent --show-error \
-            https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar \
-            --output "$RUNNER_TEMP/bundletool/bundletool-all-1.18.3.jar"
-          echo "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29  $RUNNER_TEMP/bundletool/bundletool-all-1.18.3.jar" \
-            | sha256sum -c -
+          curl --fail --location --silent --show-error https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar --output "$RUNNER_TEMP/bundletool/bundletool-all-1.18.3.jar"
+          echo "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29  $RUNNER_TEMP/bundletool/bundletool-all-1.18.3.jar" | sha256sum -c -
           echo "BUNDLETOOL_JAR=$RUNNER_TEMP/bundletool/bundletool-all-1.18.3.jar" >> "$GITHUB_ENV"
 
       - name: Verify release native packaging
+        env:
+          CEDARLING_RELEASE_APK: ${{ github.workspace }}/${{ matrix.app_dir }}/android/app/build/outputs/apk/release/app-release.apk
+          CEDARLING_RELEASE_AAB: ${{ github.workspace }}/${{ matrix.app_dir }}/android/app/build/outputs/bundle/release/app-release.aab
         run: npm run verify:android-artifacts
 
-      - name: Upload release application artifacts
+      - name: Upload Android release application
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: android-release-${{ github.sha }}
+          name: android-${{ matrix.kind }}-release-${{ github.sha }}
           path: |
-            example/android/app/build/outputs/apk/release/*.apk
-            example/android/app/build/outputs/bundle/release/*.aab
+            ${{ matrix.app_dir }}/android/app/build/outputs/apk/release/*.apk
+            ${{ matrix.app_dir }}/android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 7
 
-      - name: Upload Android reports
+      - name: Upload Android build reports
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: android-build-reports-${{ github.sha }}
+          name: android-${{ matrix.kind }}-build-reports-${{ github.sha }}
           path: |
             android/build/reports
             android/build/test-results
-            example/android/app/build/reports
+            ${{ matrix.app_dir }}/android/app/build/reports
           if-no-files-found: ignore
           retention-days: 7
 
   android-runtime:
-    name: Android real native runtime
+    name: Android ${{ matrix.kind }} JavaScript-to-Rust runtime
     runs-on: macos-15-intel
-    timeout-minutes: 60
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - kind: expo
+            app_dir: example
+          - kind: bare
+            app_dir: bare-example
     steps:
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -177,14 +208,16 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            example/package-lock.json
+            ${{ matrix.app_dir }}/package-lock.json
 
       - name: Install locked dependencies
         run: |
           npm ci
-          npm --prefix example ci
+          npm --prefix ${{ matrix.app_dir }} ci
+          npm run build
 
-      - name: Generate a clean Android project
+      - name: Generate a clean Expo Android project
+        if: ${{ matrix.kind == 'expo' }}
         working-directory: example
         run: npx expo prebuild --clean --platform android --no-install
 
@@ -196,9 +229,9 @@ jobs:
           cache: gradle
           cache-dependency-path: |
             android/build.gradle
-            example/android/**/*.gradle*
+            ${{ matrix.app_dir }}/android/**/*.gradle*
 
-      - name: Run Cedarling on an API 36 x86_64 emulator
+      - name: Run real native and UI smoke tests on API 36 x86_64
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
           api-level: 36
@@ -209,26 +242,40 @@ jobs:
           emulator-boot-timeout: 900
           disable-animations: true
           emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-metrics
-          script: bash scripts/run-android-instrumentation.sh
+          script: bash scripts/run-android-ui-smoke.sh ${{ matrix.kind }}
 
-      - name: Upload Android runtime reports
+      - name: Require the downloadable PASS screenshot
+        if: ${{ always() }}
+        run: test -s "$RUNNER_TEMP/cedarling-android-${{ matrix.kind }}/android-${{ matrix.kind }}-success.png"
+
+      - name: Upload Android screenshots, video, logs, and reports
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: android-runtime-reports-${{ github.sha }}
+          name: android-${{ matrix.kind }}-runtime-evidence-${{ github.sha }}
           path: |
+            ${{ runner.temp }}/cedarling-android-${{ matrix.kind }}
             android/build/reports/androidTests
             android/build/outputs/androidTest-results
-            ${{ runner.temp }}/android-logcat.txt
           if-no-files-found: ignore
           retention-days: 7
 
   ios:
-    name: iOS native, simulator UI, and device link
+    name: iOS ${{ matrix.kind }} native, UI, and unsigned device link
     runs-on: macos-26
-    timeout-minutes: 120
+    timeout-minutes: 150
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.4.app/Contents/Developer
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - kind: expo
+            app_dir: example
+            app_name: CedarlingReactNativeExample
+          - kind: bare
+            app_dir: bare-example
+            app_name: CedarlingBareExample
     steps:
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -249,14 +296,15 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            example/package-lock.json
+            ${{ matrix.app_dir }}/package-lock.json
 
       - name: Install locked JavaScript dependencies
         run: |
           npm ci
-          npm --prefix example ci
+          npm --prefix ${{ matrix.app_dir }} ci
+          npm run build
 
-      - name: Select an available iPhone simulator
+      - name: Select an available arm64 iPhone Simulator
         run: |
           simulator_json="$RUNNER_TEMP/available-simulators.json"
           xcrun simctl list devices available --json > "$simulator_json"
@@ -273,102 +321,106 @@ jobs:
             console.log(`Selected ${device.name} (${device.udid})`);
           '
 
-      - name: Verify exact-pin iOS artifacts on macOS
+      - name: Verify exact-pin iOS artifacts
         run: npm run verify:ios-artifacts -- --native-only
 
-      - name: Generate a clean iOS project
+      - name: Generate a clean Expo iOS project
+        if: ${{ matrix.kind == 'expo' }}
         working-directory: example
         run: npx expo prebuild --clean --platform ios --no-install
 
-      - name: Install CocoaPods dependencies
+      - name: Install locked Expo CocoaPods dependencies
+        if: ${{ matrix.kind == 'expo' }}
         working-directory: example/ios
         run: |
-          test -f ../ios-lock/Podfile.lock
           cp ../ios-lock/Podfile.lock Podfile.lock
           pod install --deployment
           grep -q 'CedarlingReactNative' Podfile.lock
 
-      - name: Upload verified Podfile lock
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: ios-pod-lock-${{ github.sha }}
-          path: example/ios/Podfile.lock
-          if-no-files-found: error
-          retention-days: 3
+      - name: Install bare CocoaPods dependencies and verify lock replay
+        if: ${{ matrix.kind == 'bare' }}
+        working-directory: bare-example/ios
+        run: |
+          pod install
+          pod install --deployment
+          grep -q 'CedarlingReactNative' Podfile.lock
 
       - name: Configure discoverable native and UI test targets
-        run: ruby scripts/configure-ios-tests.rb
+        run: ruby scripts/configure-ios-tests.rb ${{ matrix.app_dir }}
 
-      - name: Run native Swift tests
+      - name: Run native Swift-to-Rust tests
         run: |
           set -o pipefail
-          xcodebuild test \
-            -workspace example/ios/CedarlingReactNativeExample.xcworkspace \
-            -scheme CedarlingReactNativeExample-NativeTests \
-            -configuration Debug \
-            -destination "platform=iOS Simulator,id=$IOS_SIMULATOR_UDID" \
-            -derivedDataPath "$RUNNER_TEMP/CedarlingDerivedData" \
-            -resultBundlePath "$RUNNER_TEMP/CedarlingNativeTests.xcresult" \
-            -only-testing:CedarlingReactNativeExampleTests \
-            CODE_SIGNING_ALLOWED=NO \
-            | tee "$RUNNER_TEMP/ios-native-tests.log"
+          xcodebuild test -workspace ${{ matrix.app_dir }}/ios/${{ matrix.app_name }}.xcworkspace -scheme ${{ matrix.app_name }}-NativeTests -configuration Debug -destination "platform=iOS Simulator,id=$IOS_SIMULATOR_UDID" -derivedDataPath "$RUNNER_TEMP/${{ matrix.app_name }}DerivedData" -resultBundlePath "$RUNNER_TEMP/${{ matrix.app_name }}NativeTests.xcresult" -only-testing:${{ matrix.app_name }}Tests CODE_SIGNING_ALLOWED=NO | tee "$RUNNER_TEMP/ios-${{ matrix.kind }}-native-tests.log"
 
-      - name: Run JavaScript-to-Rust simulator smoke test
+      - name: Run JavaScript-to-Rust UI smoke and capture evidence
         run: |
           set -o pipefail
-          xcodebuild test \
-            -workspace example/ios/CedarlingReactNativeExample.xcworkspace \
-            -scheme CedarlingReactNativeExample-UITests \
-            -configuration Release \
-            -destination "platform=iOS Simulator,id=$IOS_SIMULATOR_UDID" \
-            -derivedDataPath "$RUNNER_TEMP/CedarlingDerivedData" \
-            -resultBundlePath "$RUNNER_TEMP/CedarlingUITests.xcresult" \
-            -only-testing:CedarlingReactNativeExampleUITests \
-            ARCHS=arm64 \
-            ONLY_ACTIVE_ARCH=YES \
-            CODE_SIGNING_ALLOWED=NO \
-            | tee "$RUNNER_TEMP/ios-ui-tests.log"
+          success_png="$RUNNER_TEMP/ios-${{ matrix.kind }}-success.png"
+          failure_png="$RUNNER_TEMP/ios-${{ matrix.kind }}-failure.png"
+          video="$RUNNER_TEMP/ios-${{ matrix.kind }}.mp4"
+          cleanup() {
+            if [[ -n "${video_pid:-}" ]]; then
+              kill -INT "$video_pid" >/dev/null 2>&1 || true
+              wait "$video_pid" >/dev/null 2>&1 || true
+            fi
+          }
+          failure() {
+            xcrun simctl io "$IOS_SIMULATOR_UDID" screenshot "$failure_png" || true
+            cleanup
+          }
+          trap failure ERR
+          xcrun simctl boot "$IOS_SIMULATOR_UDID" 2>/dev/null || true
+          open -a Simulator --args -CurrentDeviceUDID "$IOS_SIMULATOR_UDID"
+          xcrun simctl io "$IOS_SIMULATOR_UDID" recordVideo --codec=h264 "$video" &
+          video_pid=$!
+          xcodebuild test -workspace ${{ matrix.app_dir }}/ios/${{ matrix.app_name }}.xcworkspace -scheme ${{ matrix.app_name }}-UITests -configuration Release -destination "platform=iOS Simulator,id=$IOS_SIMULATOR_UDID" -derivedDataPath "$RUNNER_TEMP/${{ matrix.app_name }}DerivedData" -resultBundlePath "$RUNNER_TEMP/${{ matrix.app_name }}UITests.xcresult" -only-testing:${{ matrix.app_name }}UITests ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO | tee "$RUNNER_TEMP/ios-${{ matrix.kind }}-ui-tests.log"
+          cleanup
+          video_pid=""
+          xcrun simctl io "$IOS_SIMULATOR_UDID" screenshot "$success_png"
+          test -s "$success_png"
+          trap - ERR
 
       - name: Compile and link the device slice without signing
         run: |
           set -o pipefail
-          xcodebuild build \
-            -workspace example/ios/CedarlingReactNativeExample.xcworkspace \
-            -scheme CedarlingReactNativeExample \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath "$RUNNER_TEMP/CedarlingDerivedData" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            | tee "$RUNNER_TEMP/ios-device-build.log"
-          app_binary="$RUNNER_TEMP/CedarlingDerivedData/Build/Products/Release-iphoneos/CedarlingReactNativeExample.app/CedarlingReactNativeExample"
+          xcodebuild build -workspace ${{ matrix.app_dir }}/ios/${{ matrix.app_name }}.xcworkspace -scheme ${{ matrix.app_name }} -configuration Release -destination 'generic/platform=iOS' -derivedDataPath "$RUNNER_TEMP/${{ matrix.app_name }}DerivedData" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$RUNNER_TEMP/ios-${{ matrix.kind }}-device-build.log"
+          app_binary="$RUNNER_TEMP/${{ matrix.app_name }}DerivedData/Build/Products/Release-iphoneos/${{ matrix.app_name }}.app/${{ matrix.app_name }}"
           test -f "$app_binary"
           file "$app_binary" | grep -q arm64
-          otool -L "$app_binary" | tee "$RUNNER_TEMP/ios-device-dependencies.txt"
-          if grep -E '^[[:space:]]+(/Users/|/home/)' "$RUNNER_TEMP/ios-device-dependencies.txt"; then
+          otool -L "$app_binary" | tee "$RUNNER_TEMP/ios-${{ matrix.kind }}-device-dependencies.txt"
+          if grep -E '^[[:space:]]+(/Users/|/home/)' "$RUNNER_TEMP/ios-${{ matrix.kind }}-device-dependencies.txt"; then
             echo "Device binary contains a machine-local dynamic dependency" >&2
             exit 1
           fi
 
-      - name: Upload iOS test and build diagnostics
+      - name: Require the downloadable PASS screenshot
+        if: ${{ always() }}
+        run: test -s "$RUNNER_TEMP/ios-${{ matrix.kind }}-success.png"
+
+      - name: Upload iOS screenshots, video, XCResult, logs, and Pod lock
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ios-diagnostics-${{ github.sha }}
+          name: ios-${{ matrix.kind }}-runtime-evidence-${{ github.sha }}
           path: |
-            ${{ runner.temp }}/CedarlingNativeTests.xcresult
-            ${{ runner.temp }}/CedarlingUITests.xcresult
-            ${{ runner.temp }}/ios-native-tests.log
-            ${{ runner.temp }}/ios-ui-tests.log
-            ${{ runner.temp }}/ios-device-build.log
-            ${{ runner.temp }}/ios-device-dependencies.txt
+            ${{ runner.temp }}/ios-${{ matrix.kind }}-success.png
+            ${{ runner.temp }}/ios-${{ matrix.kind }}-failure.png
+            ${{ runner.temp }}/ios-${{ matrix.kind }}.mp4
+            ${{ runner.temp }}/${{ matrix.app_name }}NativeTests.xcresult
+            ${{ runner.temp }}/${{ matrix.app_name }}UITests.xcresult
+            ${{ runner.temp }}/ios-${{ matrix.kind }}-native-tests.log
+            ${{ runner.temp }}/ios-${{ matrix.kind }}-ui-tests.log
+            ${{ runner.temp }}/ios-${{ matrix.kind }}-device-build.log
+            ${{ runner.temp }}/ios-${{ matrix.kind }}-device-dependencies.txt
+            ${{ matrix.app_dir }}/ios/Podfile.lock
           if-no-files-found: ignore
           retention-days: 7
 
       - name: Upload unsigned iOS device build
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ios-unsigned-device-build-${{ github.sha }}
-          path: ${{ runner.temp }}/CedarlingDerivedData/Build/Products/Release-iphoneos/CedarlingReactNativeExample.app
+          name: ios-${{ matrix.kind }}-unsigned-device-build-${{ github.sha }}
+          path: ${{ runner.temp }}/${{ matrix.app_name }}DerivedData/Build/Products/Release-iphoneos/${{ matrix.app_name }}.app
           if-no-files-found: error
           retention-days: 7

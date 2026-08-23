@@ -5,7 +5,11 @@ require 'pathname'
 require 'xcodeproj'
 
 project_root = Pathname.new(__dir__).join('..').expand_path
-example_root = project_root.join('example')
+example_name = ARGV.fetch(0, 'example')
+unless %w[example bare-example].include?(example_name)
+  abort 'Usage: scripts/configure-ios-tests.rb [example|bare-example]'
+end
+example_root = project_root.join(example_name)
 project_path = Dir[example_root.join('ios', '*.xcodeproj').to_s].first
 abort 'Generated iOS Xcode project was not found' unless project_path
 
@@ -26,7 +30,7 @@ ui_target.add_dependency(app_target)
 
 tests_group = project.main_group.find_subpath('CedarlingTests', true)
 unit_files = Dir[project_root.join('ios', 'Tests', '*.swift').to_s].sort
-ui_files = Dir[example_root.join('ios-tests', '*.swift').to_s].sort
+ui_files = Dir[project_root.join('example', 'ios-tests', '*.swift').to_s].sort
 abort 'Native unit-test sources were not found' if unit_files.empty?
 abort 'iOS UI-test sources were not found' if ui_files.empty?
 
@@ -35,12 +39,13 @@ ui_refs = ui_files.map { |path| tests_group.new_file(path) }
 unit_target.add_file_references(unit_refs)
 ui_target.add_file_references(ui_refs)
 
+fixture_root = project_root.join('example', 'assets')
 resource_paths = [
-  example_root.join('assets', 'fixtures', 'bootstrap.json'),
-  example_root.join('assets', 'fixtures', 'allow-principal.json'),
-  example_root.join('assets', 'fixtures', 'deny-principal.json'),
-  example_root.join('assets', 'fixtures', 'resource.json'),
-  example_root.join('assets', 'policy-store.cjar')
+  fixture_root.join('fixtures', 'bootstrap.json'),
+  fixture_root.join('fixtures', 'allow-principal.json'),
+  fixture_root.join('fixtures', 'deny-principal.json'),
+  fixture_root.join('fixtures', 'resource.json'),
+  fixture_root.join('policy-store.cjar')
 ]
 resource_refs = resource_paths.map { |path| tests_group.new_file(path.to_s) }
 resource_refs.each { |reference| unit_target.resources_build_phase.add_file_reference(reference) }
@@ -56,7 +61,7 @@ unit_target.build_configurations.each do |configuration|
     'GENERATE_INFOPLIST_FILE' => 'YES',
     'IPHONEOS_DEPLOYMENT_TARGET' => '17.5',
     'OTHER_LDFLAGS' => '',
-    'PRODUCT_BUNDLE_IDENTIFIER' => "com.dahkenangnon.cedarlingreactnative.#{unit_name.downcase}",
+    'PRODUCT_BUNDLE_IDENTIFIER' => "com.dahkenangnon.cedarlingreactnative.#{example_name.delete('-')}.#{unit_name.downcase}",
     'PRODUCT_NAME' => unit_name,
     'SWIFT_VERSION' => '5.9',
     'TEST_HOST' => "$(BUILT_PRODUCTS_DIR)/#{app_target.product_name}.app/#{app_target.product_name}"
@@ -67,7 +72,7 @@ ui_target.build_configurations.each do |configuration|
   configuration.build_settings.merge!(
     'GENERATE_INFOPLIST_FILE' => 'YES',
     'IPHONEOS_DEPLOYMENT_TARGET' => '17.5',
-    'PRODUCT_BUNDLE_IDENTIFIER' => "com.dahkenangnon.cedarlingreactnative.#{ui_name.downcase}",
+    'PRODUCT_BUNDLE_IDENTIFIER' => "com.dahkenangnon.cedarlingreactnative.#{example_name.delete('-')}.#{ui_name.downcase}",
     'PRODUCT_NAME' => ui_name,
     'SWIFT_VERSION' => '5.9',
     'TEST_TARGET_NAME' => app_target.name

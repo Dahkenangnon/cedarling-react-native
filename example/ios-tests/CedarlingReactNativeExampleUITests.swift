@@ -5,6 +5,12 @@ final class CedarlingReactNativeExampleUITests: XCTestCase {
     continueAfterFailure = false
   }
 
+  override func tearDownWithError() throws {
+    if testRun?.hasSucceeded == false {
+      attachScreenshot(named: "cedarling-ui-failure")
+    }
+  }
+
   func testRealNativeAllowDenyAndReinitialize() throws {
     let app = XCUIApplication()
     app.launch()
@@ -20,6 +26,10 @@ final class CedarlingReactNativeExampleUITests: XCTestCase {
     XCTAssertEqual(app.staticTexts["overall-status-value"].label, "PASS")
     XCTAssertEqual(app.staticTexts["allow-result-decision"].label, "ALLOW")
     XCTAssertEqual(app.staticTexts["deny-result-decision"].label, "DENY")
+    XCTAssertEqual(
+      app.staticTexts["smoke-evidence-summary"].label,
+      "ALLOW request: ALLOW · DENY request: DENY"
+    )
     XCTAssertTrue(app.staticTexts["allow-result-reasons"].label.contains("allow_reader"))
     XCTAssertEqual(app.staticTexts["completed-runs-value"].label, "1")
 
@@ -32,6 +42,7 @@ final class CedarlingReactNativeExampleUITests: XCTestCase {
     waitForExpectations(timeout: 60)
     XCTAssertEqual(app.staticTexts["overall-status-value"].label, "PASS")
     XCTAssertFalse(app.otherElements["smoke-error"].exists)
+    attachScreenshot(named: "cedarling-ui-success")
   }
 
   private func scrollToHittable(_ element: XCUIElement, in app: XCUIApplication) {
@@ -39,5 +50,12 @@ final class CedarlingReactNativeExampleUITests: XCTestCase {
       app.swipeUp()
     }
     XCTAssertTrue(element.isHittable)
+  }
+
+  private func attachScreenshot(named name: String) {
+    let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+    attachment.name = name
+    attachment.lifetime = .keepAlways
+    add(attachment)
   }
 }
