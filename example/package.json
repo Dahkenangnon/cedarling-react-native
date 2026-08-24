@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+    "cedarling-react-native": "file:..",
     "expo": "~57.0.15",
     "expo-asset": "~57.0.13",
     "expo-build-properties": "~57.0.13",
@@ -11,6 +12,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "babel-preset-expo": "~57.0.7",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -25,11 +27,6 @@
     "build:ios": "xcodebuild -workspace ios/CedarlingReactNativeExample.xcworkspace -scheme CedarlingReactNativeExample -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO build"
   },
   "private": true,
-  "expo": {
-    "autolinking": {
-      "nativeModulesDir": ".."
-    }
-  },
   "overrides": {
     "xcode": {
       "uuid": "11.1.1"

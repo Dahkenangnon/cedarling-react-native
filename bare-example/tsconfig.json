@@ -1,0 +1,12 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "strict": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "cedarling-react-native": ["../src/index"],
+      "cedarling-react-native/*": ["../src/*"]
+    }
+  },
+  "include": ["App.tsx", "../demo/**/*.tsx", "../example/assets/fixtures/*.json"]
+}

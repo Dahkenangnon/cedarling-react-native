@@ -36,7 +36,7 @@ internal class CedarlingService(context: Context) {
           if (archiveUri == null) {
             Cedarling.loadFromJson(bootstrapJson)
           } else {
-            val archive = CedarlingArchive.read(applicationContext.contentResolver, archiveUri)
+            val archive = CedarlingArchive.read(applicationContext, archiveUri)
             Cedarling.loadFromJsonWithArchiveBytes(bootstrapJson, archive)
           }
         } catch (error: CedarlingSdkException) {

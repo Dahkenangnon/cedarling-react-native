@@ -1,0 +1,16 @@
+node_modules/
+android/.gradle/
+android/.cxx/
+android/build/
+android/app/build/
+android/local.properties
+ios/Pods/
+ios/build/
+ios/*.xcworkspace/
+ios/.xcode.env.local
+*.xcuserstate
+xcuserdata/
+.bundle/
+vendor/
+npm-debug.log*
+.DS_Store

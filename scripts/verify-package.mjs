@@ -1,10 +1,20 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+const packageJson = JSON.parse(readFileSync(join(projectDir, 'package.json'), 'utf8'));
+for (const section of ['dependencies', 'optionalDependencies', 'peerDependencies']) {
+  for (const name of ['expo', 'expo-modules-core']) {
+    if (packageJson[section]?.[name]) {
+      throw new Error(`package.json must not declare ${name} in ${section}`);
+    }
+  }
+}
+
 const output = execFileSync('npm', ['pack', '--dry-run', '--json'], {
   cwd: projectDir,
   encoding: 'utf8',
@@ -20,10 +30,17 @@ const pathSet = new Set(paths);
 const required = [
   'build/index.js',
   'build/index.d.ts',
-  'expo-module.config.json',
+  'build/NativeCedarlingReactNative.js',
+  'build/NativeCedarlingReactNative.d.ts',
+  'build/turboModuleAdapter.js',
   'CedarlingReactNative.podspec',
   'THIRD_PARTY_NOTICES.md',
+  'README.md',
+  'docs/README.md',
+  'android/build.gradle',
   'android/consumer-rules.pro',
+  'android/src/main/java/expo/modules/cedarling/CedarlingReactNativeModule.kt',
+  'android/src/main/java/expo/modules/cedarling/CedarlingReactNativePackage.kt',
   'android/src/main/java/uniffi/cedarling_uniffi/cedarling_uniffi.kt',
   'android/src/main/jniLibs/armeabi-v7a/libcedarling_uniffi.so',
   'android/src/main/jniLibs/arm64-v8a/libcedarling_uniffi.so',
@@ -36,7 +53,9 @@ const required = [
   'ios/CedarlingError.swift',
   'ios/CedarlingJson.swift',
   'ios/CedarlingProvenance.swift',
-  'ios/CedarlingReactNativeModule.swift',
+  'ios/CedarlingReactNative.h',
+  'ios/CedarlingReactNative.mm',
+  'ios/CedarlingReactNativeBridge.swift',
   'ios/CedarlingResultMapper.swift',
   'ios/CedarlingService.swift',
   'ios/generated/cedarling_uniffi.swift',
@@ -61,7 +80,9 @@ if (countSuffix('/cedarling_uniffiFFI.h') !== 2 || countSuffix('/module.modulema
 
 const forbidden = paths.filter(
   (path) =>
+    path === 'expo-module.config.json' ||
     path.startsWith('example/') ||
+    path.startsWith('bare-example/') ||
     path.startsWith('ios/Tests/') ||
     path.includes('/target/') ||
     path.endsWith('.keystore') ||
@@ -72,6 +93,20 @@ const forbidden = paths.filter(
 );
 if (forbidden.length > 0) {
   throw new Error(`npm package contains development-only or secret paths: ${forbidden.join(', ')}`);
+}
+
+for (const source of [
+  'build/CedarlingModule.android.js',
+  'build/CedarlingModule.ios.js',
+  'build/NativeCedarlingReactNative.js',
+  'android/build.gradle',
+  'CedarlingReactNative.podspec',
+  'ios/CedarlingReactNative.mm',
+]) {
+  const contents = readFileSync(join(projectDir, source), 'utf8');
+  if (/expo-modules-core|ExpoModulesCore|requireNativeModule/.test(contents)) {
+    throw new Error(`npm package source retains an Expo Modules API reference: ${source}`);
+  }
 }
 
 console.log(

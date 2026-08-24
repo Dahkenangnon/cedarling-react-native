@@ -1,6 +1,6 @@
 package expo.modules.cedarling
 
-import android.content.ContentResolver
+import android.content.Context
 import android.net.Uri
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -15,6 +15,7 @@ internal const val MAX_ARCHIVE_BYTES = 10 * 1024 * 1024
 internal sealed interface ArchiveLocation {
   data class FilePath(val file: File) : ArchiveLocation
   data class ContentUri(val uri: String) : ArchiveLocation
+  data class AssetPath(val path: String) : ArchiveLocation
 
   companion object {
     fun parse(raw: String): ArchiveLocation {
@@ -53,6 +54,21 @@ internal sealed interface ArchiveLocation {
           }
         }
         "content" -> ContentUri(raw)
+        "asset" -> {
+          if (!parsed.authority.isNullOrEmpty() || parsed.query != null || parsed.fragment != null) {
+            invalidArchiveUri("asset archive URI is invalid")
+          }
+          val path = parsed.path?.removePrefix("/").orEmpty()
+          if (
+            path.isBlank() ||
+            path.split('/').any { component ->
+              component.isBlank() || component == "." || component == ".."
+            }
+          ) {
+            invalidArchiveUri("asset archive URI path is invalid")
+          }
+          AssetPath(path)
+        }
         else -> invalidArchiveUri("archive URI scheme is not supported")
       }
     }
@@ -63,14 +79,15 @@ internal sealed interface ArchiveLocation {
 }
 
 internal object CedarlingArchive {
-  fun read(contentResolver: ContentResolver, raw: String): ByteArray {
+  fun read(context: Context, raw: String): ByteArray {
     val location = ArchiveLocation.parse(raw)
     val input = try {
       when (location) {
         is ArchiveLocation.FilePath -> FileInputStream(location.file)
         is ArchiveLocation.ContentUri ->
-          contentResolver.openInputStream(Uri.parse(location.uri))
+          context.contentResolver.openInputStream(Uri.parse(location.uri))
             ?: throw IOException("content resolver returned no stream")
+        is ArchiveLocation.AssetPath -> context.assets.open(location.path)
       }
     } catch (error: IOException) {
       throw CedarlingSdkException(

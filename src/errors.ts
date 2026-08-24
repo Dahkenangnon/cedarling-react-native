@@ -20,7 +20,7 @@ const ERROR_CODE_SET = new Set<string>(CEDARLING_ERROR_CODES);
 
 export class CedarlingError extends Error {
   readonly code: CedarlingErrorCode;
-  override readonly cause?: unknown;
+  readonly cause?: unknown;
 
   constructor(code: CedarlingErrorCode, message: string, cause?: unknown) {
     super(message);

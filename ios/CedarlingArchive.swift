@@ -11,19 +11,43 @@ internal enum CedarlingArchive {
 
     let url: URL
     if let components = URLComponents(string: location), let scheme = components.scheme {
-      guard scheme.lowercased() == "file" else {
+      switch scheme.lowercased() {
+      case "file":
+        guard components.host?.isEmpty != false else {
+          throw CedarlingModuleError(
+            .invalidInput,
+            "file archive URI must not contain an authority"
+          )
+        }
+        guard components.query == nil, components.fragment == nil else {
+          throw CedarlingModuleError(.invalidInput, "file archive URI is invalid")
+        }
+        guard let parsed = URL(string: location), parsed.isFileURL else {
+          throw CedarlingModuleError(.invalidInput, "file archive URI is invalid")
+        }
+        url = parsed
+      case "bundle":
+        guard components.host?.isEmpty != false,
+              components.query == nil,
+              components.fragment == nil else {
+          throw CedarlingModuleError(.invalidInput, "bundle archive URI is invalid")
+        }
+        let relativePath = components.path.drop(while: { $0 == "/" })
+        let parts = relativePath.split(separator: "/", omittingEmptySubsequences: false)
+        guard !parts.isEmpty,
+              parts.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." }),
+              let resourceRoot = Bundle.main.resourceURL else {
+          throw CedarlingModuleError(.invalidInput, "bundle archive URI path is invalid")
+        }
+        let root = resourceRoot.standardizedFileURL
+        let candidate = root.appendingPathComponent(String(relativePath)).standardizedFileURL
+        guard candidate.path.hasPrefix(root.path + "/") else {
+          throw CedarlingModuleError(.invalidInput, "bundle archive URI path is invalid")
+        }
+        url = candidate
+      default:
         throw CedarlingModuleError(.invalidInput, "archive URI scheme is not supported")
       }
-      guard components.host?.isEmpty != false else {
-        throw CedarlingModuleError(.invalidInput, "file archive URI must not contain an authority")
-      }
-      guard components.query == nil, components.fragment == nil else {
-        throw CedarlingModuleError(.invalidInput, "file archive URI is invalid")
-      }
-      guard let parsed = URL(string: location), parsed.isFileURL else {
-        throw CedarlingModuleError(.invalidInput, "file archive URI is invalid")
-      }
-      url = parsed
     } else {
       guard location.hasPrefix("/") else {
         throw CedarlingModuleError(.invalidInput, "archive path must be absolute")

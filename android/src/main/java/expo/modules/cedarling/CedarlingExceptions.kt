@@ -1,12 +1,10 @@
 package expo.modules.cedarling
 
-import expo.modules.kotlin.exception.CodedException
-
 internal class CedarlingSdkException(
-  code: String,
+  val code: String,
   message: String,
   cause: Throwable? = null
-) : CodedException(code, message, cause)
+) : RuntimeException(message, cause)
 
 internal object CedarlingErrorCode {
   const val ALREADY_DISPOSED = "E_ALREADY_DISPOSED"

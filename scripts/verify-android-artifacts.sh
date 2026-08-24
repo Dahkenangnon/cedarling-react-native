@@ -55,7 +55,8 @@ process.stdin.on("end", () => {
   const paths = new Set(pack.files.map((file) => file.path));
   const required = [
     "build/index.js",
-    "expo-module.config.json",
+    "build/NativeCedarlingReactNative.js",
+    "android/src/main/java/expo/modules/cedarling/CedarlingReactNativePackage.kt",
     "android/consumer-rules.pro",
     "android/src/main/java/uniffi/cedarling_uniffi/cedarling_uniffi.kt",
     "android/src/main/jniLibs/armeabi-v7a/libcedarling_uniffi.so",

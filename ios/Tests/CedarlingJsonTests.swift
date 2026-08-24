@@ -56,6 +56,15 @@ final class CedarlingJsonTests: XCTestCase {
     XCTAssertEqual(tokens[0].payload, "header.payload.signature")
   }
 
+  func testAcceptsEveryJsonDataContextValueKind() {
+    for value in ["true", "42", #""text""#, "null", "[]", "{}"] {
+      XCTAssertNoThrow(try CedarlingJson.requireJsonValue(value, label: "data context value"))
+    }
+    assertCode(.invalidJson) {
+      try CedarlingJson.requireJsonValue("not-json", label: "data context value")
+    }
+  }
+
   private func assertCode(
     _ expected: CedarlingErrorCode,
     operation: () throws -> Void

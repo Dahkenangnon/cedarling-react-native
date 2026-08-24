@@ -76,7 +76,7 @@ internal enum CedarlingJson {
       throw CedarlingModuleError(.invalidJson, "\(label) must not be empty")
     }
     do {
-      return try JSONSerialization.jsonObject(with: data)
+      return try JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])
     } catch {
       throw CedarlingModuleError(.invalidJson, "\(label) is not valid JSON")
     }
